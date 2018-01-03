@@ -1,0 +1,12 @@
+
+*.log
+*.sw*
+*.pyc
+.env
+venv/
+
+# Database/fixture dumps
+*.pgdump
+*.dump
+*.db
+*.sqlite3
