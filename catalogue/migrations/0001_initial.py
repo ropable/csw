@@ -136,7 +136,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=255)),
                 ('format', models.CharField(choices=[('SLD', 'SLD'), ('QML', 'QML'), ('LYR', 'LAYER')], max_length=3)),
                 ('default', models.BooleanField(default=False)),
-                ('content', models.FileField(storage=catalogue.models.StyleStorage(), upload_to=catalogue.models.styleFilePath)),
+                ('content', models.FileField(storage=catalogue.models.OverwriteStorage(), upload_to=catalogue.models.styleFilePath)),
                 ('record', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='styles', to='catalogue.Record')),
             ],
         ),

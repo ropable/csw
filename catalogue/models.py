@@ -44,6 +44,15 @@ from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.core.files.storage import FileSystemStorage
 
+class OverwriteStorage(FileSystemStorage):
+    def get_available_name(self, name, max_length=None):
+        """
+        If the name already exist, remove it 
+        """
+        if self.exists(name):
+            self.delete(name)
+        return name
+
 slug_re = re.compile(r'^[a-z0-9_]+$')
 validate_slug = RegexValidator(slug_re, "Slug can only contain lowercase letters, numbers and underscores", "invalid")
 
@@ -190,6 +199,12 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
+def legendFilePath(instance,filename):
+    return "catalogue/legends/{}{}".format(instance.identifier.replace(':','_').replace(" ","_"),os.path.splitext(filename)[1])
+
+def sourceLegendFilePath(instance,filename):
+    return "catalogue/legends/source/{}{}".format(instance.identifier.replace(':','_').replace(" ","_"),os.path.splitext(filename)[1])
+
 class Record(models.Model):
     identifier = models.CharField(
         max_length=255, db_index=True, help_text="Maps to pycsw:Identifier")
@@ -239,8 +254,8 @@ class Record(models.Model):
     active = models.BooleanField(default=True, editable=False)
 
     bbox_re = re.compile('POLYGON\s*\(\(([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\)\)')
-    legend = models.FileField(upload_to='catalogue/legends', null=True, blank=True)
-    source_legend = models.FileField(upload_to='catalogue/legends/source', null=True, blank=True,editable=False)
+    legend = models.FileField(upload_to=legendFilePath, storage=OverwriteStorage(), null=True, blank=True)
+    source_legend = models.FileField(upload_to=sourceLegendFilePath, storage=OverwriteStorage(), null=True, blank=True,editable=False)
 
     @property 
     def bbox(self):
@@ -259,12 +274,6 @@ class Record(models.Model):
     def __unicode__(self):
         return self.identifier
 
-    def default_style(self, format):
-        try:
-            return self.styles.get(format=format, default=True)
-        except Style.DoesNotExist:
-            return None
-        
     @property
     def metadata_link(self ):
         return {
@@ -326,17 +335,6 @@ class Record(models.Model):
                     ows_links.append(link)
             links = ows_links
         return links
-
-    @property
-    def overview_image_size(self):
-        default_size = (600,600)
-        if self.bbox:
-            if (default_size[0] / default_size[1]) > math.fabs((self.bbox[2] - self.bbox[0]) / (self.bbox[3] - self.bbox[1])):
-                return (int(default_size[1] * math.fabs((self.bbox[2] - self.bbox[0]) / (self.bbox[3] - self.bbox[1]))),default_size[1])
-            else:
-                return (default_size[0],int(default_size[0] * math.fabs((self.bbox[3] - self.bbox[1]) / (self.bbox[2] - self.bbox[0]))))
-        else:
-            return default_size
 
     def generate_ows_link(self, endpoint, service_type, service_version):
         if service_version in ("1.1.0", "1.1"):
@@ -512,6 +510,18 @@ class Record(models.Model):
 
         return 'None\tNone\t{0}\t{1}'.format(json.dumps(schema), link)
 
+    def refresh_style_links(self):
+        """
+        Regenerate the style links if the current style links is incorrect.
+        return Ture if regenerated;otherwise return False
+        """
+        style_links = []
+        ows_links = self.ows_links
+
+        for style in self.styles.all():
+            style_links.append(Record.generate_style_link(style))
+            
+        return self.update_links(ows_links + style_links)
 
     @staticmethod
     def generate_style_link(style):
@@ -520,12 +530,15 @@ class Record(models.Model):
             "protocol" : "application/{}".format(style.format.lower()), 
             "name": style.name, 
             "default": style.default, 
-            "linkage":"{}/media/a".format(settings.BASE_URL)
+            "linkage":"{}/media/".format(settings.BASE_URL)
         }
-        return 'None\tNone\t{0}\t{1}/media/{2}'.format(json.dumps(schema), settings.BASE_URL, style.content)
+        return 'None\tNone\t{0}\t{1}/media/{2}'.format(json.dumps(schema,sort_keys=True), settings.BASE_URL, style.content)
 
-    @staticmethod
-    def update_links(resources, record):
+    def update_links(self,resources):
+        """
+        update links if changed
+        return True if changed;otherwise return False
+        """
         pos = 1
         links = ''
         for r in resources:
@@ -534,8 +547,12 @@ class Record(models.Model):
             else:
                 links += '^{0}'.format(r)
             pos += 1
-        record.links = links
-        record.save()
+        if self.links == links:
+            return False
+        else:
+            self.links = links
+            self.save()
+            return True
 
     @property
     def sld(self):
@@ -561,6 +578,12 @@ class Record(models.Model):
         """
         return self.default_style("QML")
     
+    def default_style(self, format):
+        try:
+            return self.styles.get(format=format, default=True)
+        except Style.DoesNotExist:
+            return None
+        
     """
     Used to check the default style
     for a particular format. If it does
@@ -568,7 +591,7 @@ class Record(models.Model):
     the default
     Return the configured default style; otherwise return None
     """
-    def setup_default_styles(self, format):
+    def set_default_style(self, format):
         default_style = self.default_style(format)
         if default_style:
             return default_style
@@ -588,6 +611,17 @@ class Record(models.Model):
             else:
                 return None
 
+    @property
+    def overview_image_size(self):
+        default_size = (600,600)
+        if self.bbox:
+            if (default_size[0] / default_size[1]) > math.fabs((self.bbox[2] - self.bbox[0]) / (self.bbox[3] - self.bbox[1])):
+                return (int(default_size[1] * math.fabs((self.bbox[2] - self.bbox[0]) / (self.bbox[3] - self.bbox[1]))),default_size[1])
+            else:
+                return (default_size[0],int(default_size[0] * math.fabs((self.bbox[3] - self.bbox[1]) / (self.bbox[2] - self.bbox[0]))))
+        else:
+            return default_size
+
     
     def delete(self, using=None):
         if self.active:
@@ -601,34 +635,26 @@ class Record(models.Model):
     class Meta:
         ordering = ['identifier']
 
-@receiver(pre_save, sender=Record)
-def update_modify_date(sender, instance, **kwargs):
-    if instance.pk:
-        update_fields=kwargs.get("update_fields", None)
-        if not update_fields or any([f in ("title","abstract","keywords","links") for f in update_fields]):
-            db_instance = Record.objects.get(pk = instance.pk)
-            if any([getattr(db_instance,f) != getattr(instance,f) for f in ("title","abstract","keywords","links")]):
-                #geoserver related columns are changed, set the modified to now
-                instance.modified = timezone.now()
-                #add field "modified" into the update field list.
-                if update_fields and "modified" not in update_fields:
-                    if not isinstance(update_fields,list):
-                        update_fields = [f for f in update_fields]
-                        kwargs["update_fields"] = update_fields
-                    update_fields.append("modified")
+class RecordEventListener(object):
+    @receiver(pre_save, sender=Record)
+    def update_modify_date(sender, instance, **kwargs):
+        if instance.pk:
+            update_fields=kwargs.get("update_fields", None)
+            if not update_fields or any([f in ("title","abstract","keywords","links") for f in update_fields]):
+                db_instance = Record.objects.get(pk = instance.pk)
+                if any([getattr(db_instance,f) != getattr(instance,f) for f in ("title","abstract","keywords","links")]):
+                    #geoserver related columns are changed, set the modified to now
+                    instance.modified = timezone.now()
+                    #add field "modified" into the update field list.
+                    if update_fields and "modified" not in update_fields:
+                        if not isinstance(update_fields,list):
+                            update_fields = [f for f in update_fields]
+                            kwargs["update_fields"] = update_fields
+                        update_fields.append("modified")
     
 
 def styleFilePath(instance,filename):
-    return "catalogue/styles/{}_{}.{}".format(instance.record.identifier.replace(':','_'),instance.name.split('.')[0],instance.format.lower())
-
-class StyleStorage(FileSystemStorage):
-    def get_available_name(self, name, max_length=None):
-        """
-        If the name already exist, remove it 
-        """
-        if self.exists(name):
-            self.delete(name)
-        return name
+    return "catalogue/styles/{}_{}.{}".format(instance.record.identifier.replace(':','_'),instance.name,instance.format.lower())
 
 class Style(models.Model):
     BUILTIN = "builtin"
@@ -641,7 +667,8 @@ class Style(models.Model):
     name = models.CharField(max_length=255)
     format = models.CharField(max_length=3, choices=FORMAT_CHOICES)
     default = models.BooleanField(default=False)
-    content = models.FileField(upload_to=styleFilePath,storage=StyleStorage())
+    content = models.FileField(upload_to=styleFilePath,storage=OverwriteStorage())
+    #active = models.BooleanField(default=True)
 
     @property
     def identifier(self):
@@ -677,82 +704,101 @@ class Style(models.Model):
 
     def __unicode__(self):
         return self.name
+
+class StyleEventListener(object):
+    @staticmethod
+    @receiver(post_save, sender=Style)
+    def update_style_link(sender, instance, **kwargs):
+        link = Record.generate_style_link(instance)
+        links_parts = re.split("\t", link)
+        json_link = json.loads(links_parts[2])
+        style_index = -1
+        style_links = instance.record.style_links
+        ows_links = instance.record.ows_links
+        if not instance.record.links:
+            instance.record.links = ''
+        index = 0
+        for style_link in style_links:
+            parts = re.split("\t", style_link)
+            r = json.loads(parts[2])
+            if r['name'] == json_link['name'] and r['protocol'] == json_link['protocol']:
+                if r["default"] != json_link["default"]:
+                    style_links[index] = link
+                    style_index = index
+                else:
+                    style_index = -2
+                break
+            index += 1
+        if style_index == -1:
+            #not exist
+            style_links.append(link)
+            links = ows_links + style_links
+            instance.record.update_links(links)
+        elif style_index >= 0:
+            links = ows_links + style_links
+            instance.record.update_links(links)
     
-@receiver(pre_save, sender=Style)
-def update_links(sender, instance, **kwargs):
-    link = Record.generate_style_link(instance)
-    links_parts = re.split("\t", link)
-    json_link = json.loads(links_parts[2])
-    present = False
-    style_links = instance.record.style_links
-    ows_links = instance.record.ows_links
-    if not instance.record.links:
-        instance.record.links = ''
-    for style_link in style_links:
-        parts = re.split("\t", style_link)
-        r = json.loads(parts[2])
-        if r['name'] == json_link['name'] and r['protocol'] == json_link['protocol']:
-            present = True
-    if not present:
-        style_links.append(link)
+    @staticmethod
+    @receiver(post_delete, sender=Style)
+    def remove_style_link(sender, instance, **kwargs):
+        style_links = instance.record.style_links
+        ows_links = instance.record.ows_links
+        #remote deleted style's link
+        for link in style_links:
+            parts = re.split("\t", link)
+            r = json.loads(parts[2])
+            if r['name'] == instance.name and instance.format.lower() in r['protocol']:
+                style_links.remove(link)
+    
         links = ows_links + style_links
-        Record.update_links(links, instance.record)
-
-@receiver(post_delete, sender=Style)
-def remove_style_links(sender, instance, **kwargs):
-    style_links = instance.record.style_links
-    ows_links = instance.record.ows_links
-    #remote deleted style's link
-    for link in style_links:
-        parts = re.split("\t", link)
-        r = json.loads(parts[2])
-        if r['name'] == instance.name and instance.format.lower() in r['protocol']:
-            style_links.remove(link)
-
-    links = ows_links + style_links
-    Record.update_links(links, instance.record)
-
-@receiver(pre_save, sender=Style)
-def set_default_style (sender, instance, **kwargs):
-    if getattr(instance,"triggered_default_style_setting",False):
-        return
-    update_fields=kwargs.get("update_fields", None)
-    if not instance.pk or not update_fields or "default" in update_fields:
+        instance.record.update_links(links)
+    
+    @staticmethod
+    @receiver(pre_save, sender=Style)
+    def clear_previous_default_style (sender, instance, **kwargs):
+        if getattr(instance,"triggered_default_style_setting",False):
+            return
+        update_fields=kwargs.get("update_fields", None)
+        if not instance.pk or not update_fields or "default" in update_fields:
+            if instance.default:
+                #The style will be set as the default style
+                cur_default_style = instance.record.default_style(instance.format)
+                if cur_default_style and cur_default_style.pk != instance.pk:
+                    #The current default style is not the saving style, reset the current default style's default to false
+                    cur_default_style.default=False
+                    setattr(cur_default_style,"triggered_default_style_setting",True)
+                    cur_default_style.save(update_fields=["default"])
+    
+    @staticmethod
+    @receiver(post_save, sender=Style)
+    def set_default_style_on_update (sender, instance, **kwargs):
+        if getattr(instance,"triggered_default_style_setting",False):
+            return
+        update_fields=kwargs.get("update_fields", None)
+        if not instance.pk or not update_fields or "default" in update_fields:
+            if not instance.default:
+                #The saving style is not the default style
+                default_style = instance.record.default_style(instance.format)
+                if not default_style :
+                    instance.record.set_default_style(instance.format)
+    
+    @staticmethod
+    @receiver(post_delete, sender=Style)
+    def set_default_style_on_delete(sender, instance, **kwargs):
         if instance.default:
-            #The style will be set as the default style
-            cur_default_style = instance.record.default_style(instance.format)
-            if cur_default_style and cur_default_style.pk != instance.pk:
-                #The current default style is not the saving style, reset the current default style's default to false
-                cur_default_style.default=False
-                setattr(cur_default_style,"triggered_default_style_setting",True)
-                cur_default_style.save(update_fields=["default"])
-                #if default style is changed, set the latiest modifyed date
-                instance.record.modified = timezone.now()
-                instance.record.save(update_fields=["modified"])
-        else:
-            #The saving style is not the default style, try to set a default style if it does not exist
-            default_style = instance.record.setup_default_styles(instance.format)
-            if not default_style or default_style.pk == instance.pk:
-                #no default style is configured, set the current one as default style
-                instance.default = True
-                #if default style is changed, set the latiest modifyed date
-                instance.record.modified = timezone.now()
-                instance.record.save(update_fields=["modified"])
-
-
-@receiver(post_delete, sender=Style)
-def auto_remove_style_from_disk_on_delete(sender, instance, **kwargs):
-    """ Deletes the style file from disk when the
-        object is deleted
-    """
-    if instance.default:
-        #deleted style is the default style, reset the default style
-            instance.record.setup_default_styles(instance.format)
-
-    if instance.content:
-        if os.path.isfile(instance.content.path):
-            os.remove(instance.content.path)
-
+            #deleted style is the default style, reset the default style
+            instance.record.set_default_style(instance.format)
+    
+    @staticmethod
+    @receiver(post_delete, sender=Style)
+    def remove_style_file(sender, instance, **kwargs):
+        """ Deletes the style file from disk when the
+            object is deleted
+        """
+        if instance.content:
+            if os.path.isfile(instance.content.path):
+                os.remove(instance.content.path)
+    
 
 class Application(models.Model):
     """

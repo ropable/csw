@@ -12,18 +12,21 @@ dump_data=0
 clear_data=0
 import_data=0
 sync_media=0
+refresh_links=0
 if [[ "$1" == "data" ]] && [[ "$2" == "dump" ]]
 then
     dump_data=1
 elif [[ "$1" == "data" ]] && [[ "$2" == "import" ]]; then
     import_data=1
-elif [[ "$1" == "data" ]] && [[ "$2" == "clear" ]]; then
-    clear_data=1
 elif [[ "$1" == "data" ]] && [[ "$2" == "" ]]; then
     dump_data=1
     import_data=1
 elif [[ "$1" == "media" ]]; then
     sync_media=1
+elif [[ "$1" == "links" ]]; then
+    refresh_links=1
+elif [[ "$1" == "clear" ]]; then
+    clear_data=1
 elif [[ "$1" == "" ]]; then
     dump_data=1
     import_data=1
@@ -106,6 +109,10 @@ then
     then
         mkdir $cswhome/media/catalogue
     fi
+    if [[ ! -d $cswhome/media/catalogue/styles ]]
+    then
+        mkdir $cswhome/media/catalogue/styles
+    fi
     if [[ ! -d $cswhome/media/catalogue/legends ]]
     then
         mkdir $cswhome/media/catalogue/legends
@@ -114,11 +121,54 @@ then
     then
         mkdir $cswhome/media/catalogue/legends/source
     fi
+    echo "Begin to synchronize media from source server"
     rsync -v -r -u root@aws-oim-001:/var/www/oim-cms.8049/media/catalogue /tmp/cswmigration/media
-    #copy and rename the styles name 
-    cp -rf /tmp/cswmigration/media/catalogue/styles $cswhome/media/catalogue
+    echo "End to synchronize media from source server"
 
-    #copy and rename the legend name 
+    #copy and rename the style
+    echo "Begin to rename style file if necessary"
+    if [[ "$targetuser" == "" ]]
+    then
+        psql -h $targethost -p $targetport -d $targetdatabase -c "select a.content,a.id,b.identifier,a.name,a.format from catalogue_style a join catalogue_record b on a.record_id = b.id" > /tmp/cswmigration/styles.txt
+    else
+        PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase -c "select a.content,a.id,b.identifier,a.name,a.format from catalogue_style a join catalogue_record b on a.record_id = b.id" > /tmp/cswmigration/styles.txt
+    fi
+    while IFS='|' read content id identifier name format
+    do
+        content="$(echo -e "${content}" | sed -e 's/^\s\{1,\}//' -e 's/\s\{1,\}$//')"
+        if [[ $content == catalogue* ]]
+        then
+            #remove leading and tail space
+            id="$(echo -e "${id}" | sed -e 's/^\s\{1,\}//' -e 's/\s\{1,\}$//')"
+            #remove leading and tail space
+            name="$(echo -e "${name}" | sed -e 's/^\s\{1,\}//' -e 's/\s\{1,\}$//')"
+            #remove leading and tail space
+            identifier="$(echo -e "${identifier}" | sed -e 's/^\s\{1,\}//' -e 's/\s\{1,\}$//')"
+            #remove leading and tail space
+            format="$(echo -e "${format}" | sed -e 's/^\s\{1,\}//' -e 's/\s\{1,\}$//')"
+            #replace space and ':' with '_'
+            identifier2="$(echo -e "${identifier}" | sed -e 's/\s/_/g' -e 's/\:/_/g')"
+            format2="${format,,}"
+            new_content="catalogue/styles/${identifier2}_${name}.${format2,,}"
+            if [[ ! "$content" == "$new_content"  ]]
+            then
+                echo "$id  $identifier $name $format  $content => $new_content   "
+                #update database
+                if [[ "$targetuser" == "" ]]
+                then
+                    psql -h $targethost -p $targetport -d $targetdatabase -c "update catalogue_style set content='${new_content}' where id=${id}" 
+                else
+                    PGPASSWORD=$targetpassword && psql -h $targethost -p $targetport -d $targetdatabase -c "update catalogue_style set content='${new_content}' where id=${id}"
+                fi
+            fi
+            #copy style file
+            cp /tmp/cswmigration/media/${content} $cswhome/media/${new_content}
+        fi
+    done < /tmp/cswmigration/styles.txt
+    echo "End to rename style file"
+
+    #copy and rename the legend
+    echo "Begin to rename legend file if necessary"
     if [[ "$targetuser" == "" ]]
     then
         psql -h $targethost -p $targetport -d $targetdatabase -c "select legend,id,identifier from catalogue_record where legend is not null and legend !=''" > /tmp/cswmigration/records.txt
@@ -132,14 +182,16 @@ then
         then
             IFS='.' read -ra legend_file <<< $legend
             legend_ext=${legend_file[-1]}
-
+            #remove leading and tail space
             id="$(echo -e "${id}" | sed -e 's/^\s\{1,\}//' -e 's/\s\{1,\}$//')"
+            #remove leading and tail space
             identifier="$(echo -e "${identifier}" | sed -e 's/^\s\{1,\}//' -e 's/\s\{1,\}$//')"
-            new_legend_file="$(echo -e "${identifier}" | sed -e 's/\s/_/g' -e 's/\:/_/g'
+            #replace space and ':' with '_'
+            new_legend_file="$(echo -e "${identifier}" | sed -e 's/\s/_/g' -e 's/\:/_/g')"
             new_legend="catalogue/legends/${new_legend_file}.${legend_ext}"
             if [[ ! "$legend" == "$new_legend"  ]]
             then
-                echo "$id      $legend              $new_legend"
+                echo "$id  $identifier    $legend  =>  $new_legend"
                 #update database
                 if [[ "$targetuser" == "" ]]
                 then
@@ -152,7 +204,9 @@ then
             cp /tmp/cswmigration/media/${legend} $cswhome/media/${new_legend}
         fi
     done < /tmp/cswmigration/records.txt
+    echo "End to rename legend file"
 
+    echo "Begin to rename source legend file if necessary"
     #copy and rename the source legend name 
     if [[ "$targetuser" == "" ]]
     then
@@ -168,13 +222,16 @@ then
             IFS='.' read -ra legend_file <<< $legend
             legend_ext=${legend_file[-1]}
 
+            #remove leading and tail space
             id="$(echo -e "${id}" | sed -e 's/^\s\{1,\}//' -e 's/\s\{1,\}$//')"
+            #remove leading and tail space
             identifier="$(echo -e "${identifier}" | sed -e 's/^\s\{1,\}//' -e 's/\s\{1,\}$//')"
-            new_legend_file="$(echo -e "${identifier}" | sed -e 's/\s/_/g' -e 's/\:/_/g'  | sed -e 's/_\{2,\}/_/g')"
+            #replace space and ':' with '_'
+            new_legend_file="$(echo -e "${identifier}" | sed -e 's/\s/_/g' -e 's/\:/_/g')"
             new_legend="catalogue/legends/source/${new_legend_file}.${legend_ext}"
             if [[ ! "$legend" == "$new_legend"  ]]
             then
-                echo "$id      $legend              $new_legend"
+                echo "$id  $identifier    $legend  =>   $new_legend"
                 #update database
                 if [[ "$targetuser" == "" ]]
                 then
@@ -187,16 +244,24 @@ then
             cp /tmp/cswmigration/media/${legend} $cswhome/media/${new_legend}
         fi
     done < /tmp/cswmigration/records.txt
-
+    echo "End to rename source legend file if necessary"
 fi
 
+if [[ $refresh_links -eq 1 ]]
+then
+    currentdir=$(pwd)
+    cd $cswhome && source venv/bin/activate && honcho run python manage.py formalizedata stylelinks
+    cd $currentdir
+fi
 
 if [[ $clear_data -eq 1 ]]
 then
     if [[ -d /tmp/cswmigration ]]
     then
         rm -rf /tmp/cswmigration
-        echo "Clear the dumped data"
+a22     echo "Clear the dumped data"
     fi
 fi
 
+#refresh record links
+echo "Migration finished"

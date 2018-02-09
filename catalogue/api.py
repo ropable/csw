@@ -60,7 +60,7 @@ class OwsResourceSerializer(serializers.Serializer):
             style_links = record.style_links
             resources = links + style_links
 
-            Record.update_links(resources, record)
+            record.update_links(resources)
 
 
 # Style Serializer
