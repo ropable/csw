@@ -4,3 +4,7 @@ django-reversion==2.0.10
 django-uwsgi==0.2.1
 git+https://github.com/parksandwildlife/dpaw-utils.git@0.3a16#egg=dpaw-utils
 pyproj==1.9.5.1
+djangorestframework==3.4.0
+djangorestframework-filters==0.10.1
+pycsw==2.0.2
+
