@@ -77,7 +77,7 @@ class StyleAdmin(admin.ModelAdmin):
 
 @admin.register(models.Record)
 class RecordAdmin(VersionAdmin):
-    list_display = ("identifier", "service_type", "crs", "title", "active", "_publish_required", "publication_date")
+    list_display = ("identifier", "service_type", "crs", "title", "active", "publication_date")
     inlines = [StyleInline, ]
     readonly_fields = ('service_type', 'service_type_version', 'crs', '_bounding_box','source_legend', "_ows_resources", 'active', 'publication_date', 'modified', 'insert_date')
     search_fields = ["identifier", 'service_type']
