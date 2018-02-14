@@ -80,30 +80,26 @@ except:
 
 class PreviewTile(object):
     @staticmethod
-    def _preview_tile(srs_bbox, bbox, default_tilebox):
+    def _preview_tile(max_tile_bbox,max_zoom, bbox):
         #compute the tile which can cover the whole bbox
-        min_distance = min([srs_bbox[2] - srs_bbox[0], srs_bbox[3] - srs_bbox[1]])
-        tile_size = max([bbox[2] - bbox[0], bbox[3] - bbox[1]])
-        max_tiles = int(min_distance / tile_size)
-        max_level = -1
-        tile_bbox = None
-        while (max_tiles > 0):
-            max_tiles /= 2
-            max_level += 1
-
-        while(max_level >= 0):
-            distancePerTile = float(min_distance) / math.pow(2, max_level)
-            xtile = int((bbox[0] - srs_bbox[0]) / distancePerTile)
-            ytile = int((bbox[1] - srs_bbox[1]) / distancePerTile)
-            tile_bbox = [xtile * distancePerTile + srs_bbox[0], ytile * distancePerTile + srs_bbox[1], (xtile + 1) * distancePerTile + srs_bbox[0], (ytile + 1) * distancePerTile + srs_bbox[1]]
-            if tile_bbox[0] <= bbox[0] and tile_bbox[1] <= bbox[1] and tile_bbox[2] >= bbox[2] and tile_bbox[3] >= bbox[3]:
+        tile_bbox = list(max_tile_bbox)
+        zoom_level = 1
+        while zoom_level <= max_zoom:
+            if (
+                    (bbox[0] - tile_bbox[0]  < (tile_bbox[2] - tile_bbox[0]) / 2 and bbox[2] - tile_bbox[0]  >= (tile_bbox[2] - tile_bbox[0]) / 2) or
+                    (bbox[1] - tile_bbox[1]  < (tile_bbox[3] - tile_bbox[1]) / 2 and bbox[3] - tile_bbox[1]  >= (tile_bbox[3] - tile_bbox[1]) / 2)
+                ):
                 break
+            if bbox[0] - tile_bbox[0]  < (tile_bbox[2] - tile_bbox[0]) / 2:
+                tile_bbox[2] = tile_bbox[0] + (tile_bbox[2] - tile_bbox[0]) / 2
             else:
-                max_level -= 1
-                tile_bbox = None
+                tile_bbox[0] = tile_bbox[0] + (tile_bbox[2] - tile_bbox[0]) / 2
 
-        if not tile_bbox:
-            tile_bbox = default_tilebox
+            if bbox[1] - tile_bbox[1]  < (tile_bbox[3] - tile_bbox[1]) / 2:
+                tile_bbox[3] = tile_bbox[1] + (tile_bbox[3] - tile_bbox[1]) / 2
+            else:
+                tile_bbox[1] = tile_bbox[1] + (tile_bbox[3] - tile_bbox[1]) / 2
+            zoom_level += 1
 
         return tile_bbox
 
@@ -111,13 +107,13 @@ class PreviewTile(object):
     def EPSG_4326(bbox):
         #compute the tile which can cover the whole bbox
         #gridset bound [-180, -90, 180, 90]
-        return PreviewTile._preview_tile([-180, -90, 180, 90], bbox, [0, -90, 180, 90])
+        return PreviewTile._preview_tile([0, -90, 180, 90],14,bbox)
 
     @staticmethod
     def EPSG_3857(bbox):
         #compute the tile which can cover the whole bbox
         #gridset bound [-20, 037, 508.34, -20, 037, 508.34, 20, 037, 508.34, 20, 037, 508.34]
-        return PreviewTile._preview_tile([-20037508.34, -20037508.34, 20037508.34, 20037508.34], bbox, [-20037508.34, -20037508.34, 20037508.34, 20037508.34])
+        return PreviewTile._preview_tile([-20037508.34, -20037508.34, 20037508.34, 20037508.34],14,bbox)
 
 
 
@@ -227,7 +223,7 @@ class Record(models.Model):
     )
     any_text = models.TextField(help_text='Maps to pycsw:AnyText', null=True, blank=True)
     modified = models.DateTimeField(
-        null=True, blank=True, 
+        auto_now=True, 
         help_text='Maps to pycsw:Modified'
     )
     bounding_box = models.TextField(null=True, blank=True, 
@@ -259,6 +255,9 @@ class Record(models.Model):
 
     @property 
     def bbox(self):
+        """
+        Transform the bounding box string to bbox array
+        """
         if hasattr(self,"_bbox"):
             return getattr(self,"_bbox")
         elif self.bounding_box:
@@ -285,6 +284,9 @@ class Record(models.Model):
 
     @property
     def ows_resource(self ):
+        """
+        Get ows resource array from ows links in links column
+        """
         links = self.ows_links
         resources = []
         for link in links:
@@ -305,15 +307,10 @@ class Record(models.Model):
             resources.append(resource)
         return resources
 
-    @property
-    def style_links(self):
-        return self.get_resource_links('style')
-
-    @property
-    def ows_links(self):
-        return self.get_resource_links('ows')
-    
     def get_resource_links(self, _type):
+        """
+        Get array of links with specific type from links column
+        """
         if self.links:
             links = self.links.split('^')
         else:
@@ -336,7 +333,24 @@ class Record(models.Model):
             links = ows_links
         return links
 
+    @property
+    def style_links(self):
+        """
+        Get array of style links from links column
+        """
+        return self.get_resource_links('style')
+
+    @property
+    def ows_links(self):
+        """
+        Get array of ows links from links column
+        """
+        return self.get_resource_links('ows')
+    
     def generate_ows_link(self, endpoint, service_type, service_version):
+        """
+        Return a string ows link 
+        """
         if service_version in ("1.1.0", "1.1"):
             service_version = "1.1.0"
         elif service_version in ("2.0.0", "2", "2.0"):
@@ -525,6 +539,9 @@ class Record(models.Model):
 
     @staticmethod
     def generate_style_link(style):
+        """
+        Return a string style link 
+        """
         #schema =  '{{"protocol":"application/{0}", "name":"{1}", "default":"{2}", "linkage":"{3}/media/"}}'.format(style.format.lower(), style.name, style.default, settings.BASE_URL)
         schema = {
             "protocol" : "application/{}".format(style.format.lower()), 
@@ -534,10 +551,10 @@ class Record(models.Model):
         }
         return 'None\tNone\t{0}\t{1}/media/{2}'.format(json.dumps(schema,sort_keys=True), settings.BASE_URL, style.content)
 
-    def update_links(self,resources):
+    @staticmethod
+    def format_links(resources):
         """
-        update links if changed
-        return True if changed;otherwise return False
+        format resources as link string
         """
         pos = 1
         links = ''
@@ -547,6 +564,15 @@ class Record(models.Model):
             else:
                 links += '^{0}'.format(r)
             pos += 1
+        return links
+
+    def update_links(self,resources):
+        """
+        update links if changed
+        resources: a array of string links including ows links and style links
+        return True if changed;otherwise return False
+        """
+        links = self.format_links(resources)
         if self.links == links:
             return False
         else:
@@ -613,6 +639,9 @@ class Record(models.Model):
 
     @property
     def overview_image_size(self):
+        """
+        Return the overview image size based on default size and bbox
+        """
         default_size = (600,600)
         if self.bbox:
             if (default_size[0] / default_size[1]) > math.fabs((self.bbox[2] - self.bbox[0]) / (self.bbox[3] - self.bbox[1])):
@@ -638,6 +667,7 @@ class Record(models.Model):
 class RecordEventListener(object):
     @receiver(pre_save, sender=Record)
     def update_modify_date(sender, instance, **kwargs):
+        """
         if instance.pk:
             update_fields=kwargs.get("update_fields", None)
             if not update_fields or any([f in ("title","abstract","keywords","links") for f in update_fields]):
@@ -651,6 +681,8 @@ class RecordEventListener(object):
                             update_fields = [f for f in update_fields]
                             kwargs["update_fields"] = update_fields
                         update_fields.append("modified")
+        """
+        pass
     
 
 def styleFilePath(instance,filename):
