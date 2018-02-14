@@ -31,6 +31,7 @@ elif [[ "$1" == "" ]]; then
     dump_data=1
     import_data=1
     sync_media=1
+    refresh_links=1
 fi
 
 if [[ ! -d /tmp/cswmigration ]]
