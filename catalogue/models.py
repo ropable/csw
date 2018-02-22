@@ -273,14 +273,21 @@ class Record(models.Model):
     def __unicode__(self):
         return self.identifier
 
-    @property
-    def metadata_link(self ):
-        return {
-            'endpoint': '{0}/catalogue/'.format(settings.BASE_URL), 
-            'version': '2.0.2', 
-            'type': 'CSW', 
-            'link':'{0}/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={1}'.format(settings.BASE_URL, self.identifier)
-        }
+    def metadata_link(self,request ):
+        if request:
+            return {
+                'endpoint': request.build_absolute_uri('/catalogue/'), 
+                'version': '2.0.2', 
+                'type': 'CSW', 
+                'link':request.build_absolute_uri('/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={0}'.format(self.identifier))
+            }
+        else:
+            return {
+                'endpoint': '{0}/catalogue/'.format(settings.BASE_URL), 
+                'version': '2.0.2', 
+                'type': 'CSW', 
+                'link':'{0}/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={1}'.format(settings.BASE_URL, self.identifier)
+            }
 
     @property
     def ows_resource(self ):

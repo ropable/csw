@@ -125,7 +125,8 @@ class RecordSerializer(serializers.ModelSerializer):
     legend = serializers.SerializerMethodField(read_only=True)
     links = serializers.CharField(write_only=True, allow_null=True, required=False)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,request, *args, **kwargs):
+        self.request = request
         try:
             style_content = kwargs.pop("style_content")
         except:
@@ -212,13 +213,13 @@ class RecordSerializer(serializers.ModelSerializer):
         return obj.ows_resource
 
     def get_metadata_link(self, obj):
-        return obj.metadata_link
+        return obj.metadata_link(self.request)
 
     def get_legend(self, obj):
-        return '{0}{1}'.format(settings.BASE_URL,(obj.legend or obj.source_legend).url) if obj.legend or obj.source_legend else None
+        return self.request.build_absolute_uri((obj.legend or obj.source_legend).url) if obj.legend or obj.source_legend else None
 
     def get_url(self, obj):
-        return '{0}/catalogue/api/records/{1}.json'.format(settings.BASE_URL, obj.identifier)
+        return self.request.build_absolute_uri('/catalogue/api/records/{0}.json'.format(obj.identifier))
 
     def _update_styles(self,styles_data):
         # save the style to file system with specific file name
@@ -311,14 +312,14 @@ class RecordViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         style_content = bool(request.GET.get("style_content", False))
-        serializer = self.get_serializer(instance, style_content=style_content, serializer_method='read')
+        serializer = self.get_serializer(request,instance, style_content=style_content, serializer_method='read')
         return Response(serializer.data)
 
     def create(self, request):
         try:
             http_status = status.HTTP_200_OK
             # parse and valid record data
-            serializer = RecordSerializer(data=request.data, serializer_method='write')
+            serializer = RecordSerializer(request,data=request.data, serializer_method='write')
             serializer.is_valid(raise_exception=True)
             # save record data.
             record = serializer.save()
@@ -328,7 +329,7 @@ class RecordViewSet(viewsets.ModelViewSet):
             #return json data
             record.styles = list(Style.objects.filter(record=record))
             style_content = bool(request.GET.get("style_content", False))
-            serializer = RecordSerializer(record, style_content=style_content, serializer_method='read')
+            serializer = RecordSerializer(request,record, style_content=style_content, serializer_method='read')
             return Response(serializer.data, status=http_status)
         except serializers.ValidationError:
             raise
