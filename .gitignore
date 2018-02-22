@@ -1,9 +1,14 @@
-
+.env
+.coverage
 *.log
 *.sw*
 *.pyc
 .env
+migrations/.*
+media/
 venv/
+staticfiles/
+logs/
 
 # Database/fixture dumps
 *.pgdump
