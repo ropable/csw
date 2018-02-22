@@ -55,7 +55,14 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ALLOWED_HOSTS=["*"]
+if os.environ.get("ALLOWED_HOSTS"):
+    ALLOWED_HOSTS = [host.strip() for host in os.environ.get("ALLOWED_HOSTS").split(',') if host.strip()]
+else:
+    ALLOWED_HOSTS = [
+        'csw.dpaw.wa.gov.au',
+        'csw.dbca.wa.gov.au'
+    ]
+
 
 ROOT_URLCONF = 'csw.urls'
 
