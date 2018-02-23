@@ -125,22 +125,22 @@ class RecordSerializer(serializers.ModelSerializer):
     legend = serializers.SerializerMethodField(read_only=True)
     links = serializers.CharField(write_only=True, allow_null=True, required=False)
 
-    def __init__(self,request, *args, **kwargs):
-        self.request = request
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs["context"]["request"] if "context" in kwargs and "request" in kwargs["context"] else None
         try:
             style_content = kwargs.pop("style_content")
         except:
             style_content = False
         try:
-            ows_serializer_method = kwargs.pop('serializer_method')
+            ows_serialize_direction = kwargs.pop('serialize_direction')
         except:
-            ows_serializer_method = 'read'
+            ows_serialize_direction = 'read'
 
         super(RecordSerializer, self).__init__(*args, **kwargs)
         self.fields['styles'] = StyleSerializer(many=True, required=False, style_content=style_content)
-        if ows_serializer_method == 'write':
+        if ows_serialize_direction == 'write':
             self.fields['ows_resource'] = OwsResourceSerializer(write_only=True, required=False)
-        elif ows_serializer_method == 'read':
+        elif ows_serialize_direction == 'read':
             self.fields['ows_resource'] = serializers.SerializerMethodField(read_only=True)
 
     def is_valid(self, raise_exception=False):
@@ -216,10 +216,19 @@ class RecordSerializer(serializers.ModelSerializer):
         return obj.metadata_link(self.request)
 
     def get_legend(self, obj):
-        return self.request.build_absolute_uri((obj.legend or obj.source_legend).url) if obj.legend or obj.source_legend else None
+        if obj.legend or obj.source_legend:
+            if self.request:
+                return self.request.build_absolute_uri((obj.legend or obj.source_legend).url)
+            else:
+                return '{0}{1}'.format(settings.BASE_URL,(obj.legend or obj.source_legend).url)
+        else:
+            return None
 
     def get_url(self, obj):
-        return self.request.build_absolute_uri('/catalogue/api/records/{0}.json'.format(obj.identifier))
+        if self.request:
+            return self.request.build_absolute_uri('/catalogue/api/records/{0}.json'.format(obj.identifier))
+        else:
+            return '{0}{1}'.format(settings.BASE_URL,'/catalogue/api/records/{0}.json'.format(obj.identifier))
 
     def _update_styles(self,styles_data):
         # save the style to file system with specific file name
@@ -312,14 +321,14 @@ class RecordViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         style_content = bool(request.GET.get("style_content", False))
-        serializer = self.get_serializer(request,instance, style_content=style_content, serializer_method='read')
+        serializer = self.get_serializer(instance, style_content=style_content, serialize_direction='read')
         return Response(serializer.data)
 
     def create(self, request):
         try:
             http_status = status.HTTP_200_OK
             # parse and valid record data
-            serializer = RecordSerializer(request,data=request.data, serializer_method='write')
+            serializer = self.get_serializer(data=request.data, serialize_direction='write')
             serializer.is_valid(raise_exception=True)
             # save record data.
             record = serializer.save()
@@ -329,7 +338,7 @@ class RecordViewSet(viewsets.ModelViewSet):
             #return json data
             record.styles = list(Style.objects.filter(record=record))
             style_content = bool(request.GET.get("style_content", False))
-            serializer = RecordSerializer(request,record, style_content=style_content, serializer_method='read')
+            serializer = self.get_serializer(record, style_content=style_content, serialize_direction='read')
             return Response(serializer.data, status=http_status)
         except serializers.ValidationError:
             raise
