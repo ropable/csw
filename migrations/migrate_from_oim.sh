@@ -79,7 +79,7 @@ then
         then
             psql -h $targethost -p $targetport -d $targetdatabase  -c "delete from \"$targetschema\".\"$table\""
         else
-            PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase  -c "delete from \"$targetschema\".\"$table\""
+            PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase -U $targetuser -c "delete from \"$targetschema\".\"$table\""
         fi
     done
     echo "Clean target database finsihed"
@@ -132,7 +132,7 @@ then
     then
         psql -h $targethost -p $targetport -d $targetdatabase -c "select a.content,a.id,b.identifier,a.name,a.format from catalogue_style a join catalogue_record b on a.record_id = b.id" > /tmp/cswmigration/styles.txt
     else
-        PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase -c "select a.content,a.id,b.identifier,a.name,a.format from catalogue_style a join catalogue_record b on a.record_id = b.id" > /tmp/cswmigration/styles.txt
+        PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase -U $targetuser -c "select a.content,a.id,b.identifier,a.name,a.format from catalogue_style a join catalogue_record b on a.record_id = b.id" > /tmp/cswmigration/styles.txt
     fi
     while IFS='|' read content id identifier name format
     do
@@ -159,7 +159,7 @@ then
                 then
                     psql -h $targethost -p $targetport -d $targetdatabase -c "update catalogue_style set content='${new_content}' where id=${id}" 
                 else
-                    PGPASSWORD=$targetpassword && psql -h $targethost -p $targetport -d $targetdatabase -c "update catalogue_style set content='${new_content}' where id=${id}"
+                    PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase -U $targetuser -c "update catalogue_style set content='${new_content}' where id=${id}"
                 fi
             fi
             #copy style file
@@ -174,7 +174,7 @@ then
     then
         psql -h $targethost -p $targetport -d $targetdatabase -c "select legend,id,identifier from catalogue_record where legend is not null and legend !=''" > /tmp/cswmigration/records.txt
     else
-        PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase -c "select legend,id,identifier from catalogue_record where legend is not null and legend !=''" > /tmp/cswmigration/records.txt
+        PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase -U $targetuser -c "select legend,id,identifier from catalogue_record where legend is not null and legend !=''" > /tmp/cswmigration/records.txt
     fi
     while IFS='|' read legend id identifier
     do
@@ -198,7 +198,7 @@ then
                 then
                     psql -h $targethost -p $targetport -d $targetdatabase -c "update catalogue_record set legend='${new_legend}' where id=${id}" 
                 else
-                    PGPASSWORD=$targetpassword && psql -h $targethost -p $targetport -d $targetdatabase -c "update catalogue_record set legend='${new_legend}' where id=${id}"
+                    PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase -U $targetuser -c "update catalogue_record set legend='${new_legend}' where id=${id}"
                 fi
             fi
             #copy legend file
@@ -213,7 +213,7 @@ then
     then
         psql -h $targethost -p $targetport -d $targetdatabase -c "select source_legend,id,identifier from catalogue_record where source_legend is not null and source_legend !=''" > /tmp/cswmigration/records.txt
     else
-        PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase -c "select source_legend,id,identifier from catalogue_record where source_legend is not null and source_legend !=''" > /tmp/cswmigration/records.txt
+        PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase -U $targetuser -c "select source_legend,id,identifier from catalogue_record where source_legend is not null and source_legend !=''" > /tmp/cswmigration/records.txt
     fi
     while IFS='|' read legend id identifier
     do
@@ -238,7 +238,7 @@ then
                 then
                     psql -h $targethost -p $targetport -d $targetdatabase -c "update catalogue_record set source_legend='${new_legend}' where id=${id}" 
                 else
-                    PGPASSWORD=$targetpassword && psql -h $targethost -p $targetport -d $targetdatabase -c "update catalogue_record set source_legend='${new_legend}' where id=${id}"
+                    PGPASSWORD=$targetpassword psql -h $targethost -p $targetport -d $targetdatabase -U $targetuser -c "update catalogue_record set source_legend='${new_legend}' where id=${id}"
                 fi
             fi
             #copy source legend file
