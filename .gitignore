@@ -9,9 +9,11 @@ media/
 venv/
 staticfiles/
 logs/
+uwsgi.ini
 
 # Database/fixture dumps
 *.pgdump
 *.dump
 *.db
 *.sqlite3
+
