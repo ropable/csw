@@ -27,6 +27,9 @@ SECRET_KEY = ')g0@6-uk9&n=@2p+$**(d92)$qk(8j7f$n!lxb-x=ckgy1id!9'
 DEBUG = (os.environ.get('DEBUG') or 'false').lower() in ("true","t","yes","on","y")
 BASE_URL = os.environ.get('BASE_URL') or 'https://csw.dbca.wa.gov.au'
 
+BORG_URL = os.environ.get('BORG_URL') or 'https://borg.dbca.wa.gov.au'
+
+
 
 # Application definition
 
