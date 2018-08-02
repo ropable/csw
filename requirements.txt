@@ -4,6 +4,7 @@ Django==2.0.7
 django-confy==1.0.4
 django-extensions==2.0.6
 django-reversion==2.0.13
+six==1.10.0  # Requirement of pycsw
 pycsw==2.2.0
 pyproj==1.9.5.1
 sqlalchemy==1.2.10
