@@ -27,8 +27,6 @@ http://localhost:8000/csw/server/?
 
 """
 import math
-import hashlib
-import base64
 import os
 import re
 import json
@@ -41,8 +39,8 @@ from django.db.models.signals import post_save, pre_save, post_delete, pre_delet
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.utils import timezone
 from django.core.files.storage import FileSystemStorage
+
 
 class OverwriteStorage(FileSystemStorage):
     def get_available_name(self, name, max_length=None):
@@ -188,6 +186,7 @@ class Collaborator(models.Model):
     def __unicode__(self):
         return "{}({})".format(self.name, self.organization.short_name)
 
+
 class Tag(models.Model):
     name = models.SlugField(max_length=255, unique=True)
     description = models.TextField()
@@ -195,11 +194,14 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
+
 def legendFilePath(instance,filename):
     return "catalogue/legends/{}{}".format(instance.identifier.replace(':','_').replace(" ","_"),os.path.splitext(filename)[1])
 
+
 def sourceLegendFilePath(instance,filename):
     return "catalogue/legends/source/{}{}".format(instance.identifier.replace(':','_').replace(" ","_"),os.path.splitext(filename)[1])
+
 
 class Record(models.Model):
     identifier = models.CharField(
@@ -521,7 +523,6 @@ class Record(models.Model):
             if endpoint_querystring:
                 endpoint = "{}?{}".format(endpoint, endpoint_querystring)
 
-        #schema =  '{{"protocol":"OGC:{0}", "linkage":"{1}", "version":"{2}"}}'.format(service_type.upper(), endpoint, service_version)
         schema = {
             "protocol":"OGC:{}".format(service_type.upper()),
             "linkage":endpoint,
@@ -671,6 +672,7 @@ class Record(models.Model):
     class Meta:
         ordering = ['identifier']
 
+
 class RecordEventListener(object):
     @receiver(pre_save, sender=Record)
     def update_modify_date(sender, instance, **kwargs):
@@ -743,6 +745,7 @@ class Style(models.Model):
 
     def __unicode__(self):
         return self.name
+
 
 class StyleEventListener(object):
     @staticmethod
@@ -853,7 +856,6 @@ class Application(models.Model):
     def get_view_name(app):
         return "catalogue_record_{}".format(app)
 
-
     @property
     def records_view(self):
         return Application.get_view_name(self.name)
@@ -863,6 +865,7 @@ class Application(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class ApplicationEventListener(object):
     @staticmethod
@@ -876,7 +879,6 @@ class ApplicationEventListener(object):
             #drop failed, maybe the view does not exist, ignore the exception
             connection._rollback()
 
-
     @staticmethod
     @receiver(pre_save, sender=Application)
     def _pre_save(sender, instance, **args):
@@ -888,6 +890,7 @@ class ApplicationEventListener(object):
             #create view failed
             connection._rollback()
             raise ValidationError(e)
+
 
 class ApplicationLayer(models.Model):
     """
@@ -903,5 +906,3 @@ class ApplicationLayer(models.Model):
     class Meta:
         unique_together = (('application', 'layer'))
         ordering = ['application', 'order', 'layer']
-
-

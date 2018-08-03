@@ -9,5 +9,6 @@ pycsw==2.2.0
 pyproj==1.9.5.1
 sqlalchemy==1.2.10
 djangorestframework==3.8.2
-djangorestframework-filters==0.10.2
+django-filter==2.0.0
 gunicorn==19.8.1
+mixer==6.0.1

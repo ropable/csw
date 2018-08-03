@@ -306,6 +306,7 @@ class RecordViewSet(viewsets.ModelViewSet):
     serializer_class = RecordSerializer
     authentication_classes = []
     lookup_field = "identifier"
+    filter_fields = ('application__name',)
 
     def perform_destroy(self, instance):
         instance.active = False

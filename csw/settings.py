@@ -33,7 +33,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'reversion',
     #'dpaw_utils',
-    'rest_framework_filters',
+    'django_filters',
     'catalogue',
 ]
 MIDDLEWARE = [
@@ -121,6 +121,6 @@ LOGGING = {
 
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
-        'rest_framework_filters.backends.DjangoFilterBackend',
+        'django_filters.rest_framework.DjangoFilterBackend',
     ),
 }
