@@ -1,5 +1,5 @@
 import traceback
-from rest_framework import serializers, viewsets, status, filters
+from rest_framework import serializers, viewsets, status
 from rest_framework.response import Response
 from rest_framework.fields import empty
 import base64
@@ -25,9 +25,7 @@ class OwsResourceSerializer(serializers.Serializer):
     gwc_endpoint = serializers.CharField(write_only=True, allow_null=True, default=None)
 
     def run_validation(self, data=empty):
-        #print("Run OwsResourceSerializer's run_validation")
         result = super(OwsResourceSerializer,self).run_validation(data)
-        #print("ows resource data = {}".format(data))
         if ((data.get('wfs',False) and (not data['wfs_endpoint'] or not data['wfs_version'])) or
             (data.get('wms',False) and (not data['wms_endpoint'] or not data['wms_version'])) or
             (data.get('gwc',False) and not data['gwc_endpoint'])):
@@ -106,7 +104,6 @@ class LegendSerializer(serializers.Serializer):
     ext = serializers.CharField(write_only=True, allow_null=False)
 
     def run_validation(self, data=empty):
-        #print("Run LegendSerializer's run_validation")
         return super(LegendSerializer,self).run_validation(data)
 
 
@@ -156,7 +153,6 @@ class RecordSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Incorrect bounding box dataformat.")
 
     def run_validation(self, data=empty):
-        #print("Run RecordSerializer's run_validation")
         return super(RecordSerializer,self).run_validation(data)
 
     def save(self, **kwargs):
@@ -199,7 +195,6 @@ class RecordSerializer(serializers.ModelSerializer):
         else:
             tmp_instance = Record(**self.validated_data)
         self.validated_data["links"] = self.fields["ows_resource"].get_links(tmp_instance,ows_resource_validated_data)
-        #print("links = {}".format(self.validated_data["links"]))
         result = super(RecordSerializer,self).save(**kwargs)
         #save styles
         if styles_data:
@@ -264,7 +259,7 @@ class RecordSerializer(serializers.ModelSerializer):
         for uploaded_style in iter(default_style.values()):
             uploaded_style["default"] = True
 
-        #save  style
+        # save style
         styleSerializer = self.fields["styles"].child
         styleSerializer._errors = []
         for uploaded_style in styles_data:
@@ -311,8 +306,7 @@ class RecordViewSet(viewsets.ModelViewSet):
     serializer_class = RecordSerializer
     authentication_classes = []
     lookup_field = "identifier"
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ("tags__name", "application__name")
+    filter_fields = ('application__name',)
 
     def perform_destroy(self, instance):
         instance.active = False

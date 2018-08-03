@@ -27,8 +27,6 @@ http://localhost:8000/csw/server/?
 
 """
 import math
-import hashlib
-import base64
 import os
 import re
 import json
@@ -41,13 +39,13 @@ from django.db.models.signals import post_save, pre_save, post_delete, pre_delet
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.utils import timezone
 from django.core.files.storage import FileSystemStorage
+
 
 class OverwriteStorage(FileSystemStorage):
     def get_available_name(self, name, max_length=None):
         """
-        If the name already exist, remove it 
+        If the name already exist, remove it
         """
         if self.exists(name):
             self.delete(name)
@@ -129,10 +127,10 @@ class PycswConfig(models.Model):
     #domain_query_type
     #domain_counts
     #spatial_ranking
-    transactions = models.BooleanField(default=False, 
+    transactions = models.BooleanField(default=False,
                                        help_text="Enable transactions")
     allowed_ips = models.CharField(
-        max_length=255, blank=True, default="127.0.0.1", 
+        max_length=255, blank=True, default="127.0.0.1",
         help_text="IP addresses that are allowed to make transaction requests"
     )
     harvest_page_size = models.IntegerField(default=10)
@@ -142,7 +140,7 @@ class PycswConfig(models.Model):
     keywords_type = models.CharField(max_length=255)
     fees = models.CharField(max_length=100)
     access_constraints = models.CharField(max_length=255)
-    point_of_contact = models.ForeignKey("Collaborator")
+    point_of_contact = models.ForeignKey("Collaborator", on_delete=models.PROTECT)
     repository_filter = models.CharField(max_length=255, blank=True)
     inspire_enabled = models.BooleanField(default=False)
     inspire_languages = models.CharField(max_length=255, blank=True)
@@ -177,7 +175,7 @@ class Collaborator(models.Model):
     name = models.CharField(max_length=255)
     position = models.CharField(max_length=255)
     email = models.EmailField()
-    organization = models.ForeignKey(Organization, 
+    organization = models.ForeignKey(Organization, on_delete=models.PROTECT,
                                      related_name="collaborators")
     url = models.URLField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
@@ -188,6 +186,7 @@ class Collaborator(models.Model):
     def __unicode__(self):
         return "{}({})".format(self.name, self.organization.short_name)
 
+
 class Tag(models.Model):
     name = models.SlugField(max_length=255, unique=True)
     description = models.TextField()
@@ -195,55 +194,58 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
+
 def legendFilePath(instance,filename):
     return "catalogue/legends/{}{}".format(instance.identifier.replace(':','_').replace(" ","_"),os.path.splitext(filename)[1])
+
 
 def sourceLegendFilePath(instance,filename):
     return "catalogue/legends/source/{}{}".format(instance.identifier.replace(':','_').replace(" ","_"),os.path.splitext(filename)[1])
 
+
 class Record(models.Model):
     identifier = models.CharField(
         max_length=255, db_index=True, help_text="Maps to pycsw:Identifier")
-    title = models.CharField(max_length=255, null=True, blank=True, 
+    title = models.CharField(max_length=255, null=True, blank=True,
                              help_text='Maps to pycsw:Title')
     typename = models.CharField(
-        max_length=100, default="", db_index=True, blank=True, 
+        max_length=100, default="", db_index=True, blank=True,
         help_text="Maps to pycsw:Typename", editable=False
     )
     schema = models.CharField(
-        max_length=100, default="", 
+        max_length=100, default="",
         help_text="Maps to pycsw:Schema", db_index=True, blank=True, editable=False
     )
     insert_date = models.DateTimeField(
         auto_now_add=True, help_text='Maps to pycsw:InsertDate')
     xml = models.TextField(
-        default='', 
-        editable=False, 
+        default='',
+        editable=False,
         help_text=' Maps to pycsw:XML'
     )
     any_text = models.TextField(help_text='Maps to pycsw:AnyText', null=True, blank=True)
     modified = models.DateTimeField(
-        auto_now=True, 
+        auto_now=True,
         help_text='Maps to pycsw:Modified'
     )
-    bounding_box = models.TextField(null=True, blank=True, 
+    bounding_box = models.TextField(null=True, blank=True,
                                     help_text='Maps to pycsw:BoundingBox.It\'s a WKT geometry')
-    abstract = models.TextField(blank=True, null=True, 
+    abstract = models.TextField(blank=True, null=True,
                                 help_text='Maps to pycsw:Abstract')
-    keywords = models.CharField(max_length=255, blank=True, null=True, 
+    keywords = models.CharField(max_length=255, blank=True, null=True,
                                 help_text='Maps to pycsw:Keywords')
     tags = models.ManyToManyField(Tag, blank=True)
     publication_date = models.DateTimeField(
-        null=True, blank=True, 
+        null=True, blank=True,
         help_text='Maps to pycsw:PublicationDate'
     )
-    service_type = models.CharField(max_length=30, null=True, blank=True, 
+    service_type = models.CharField(max_length=30, null=True, blank=True,
                                     help_text='Maps to pycsw:ServiceType')
     service_type_version = models.CharField(
-        max_length=30, null=True, blank=True, editable=False, 
+        max_length=30, null=True, blank=True, editable=False,
         help_text='Maps to pycsw:ServiceTypeVersion'
     )
-    links = models.TextField(null=True, blank=True, editable=False, 
+    links = models.TextField(null=True, blank=True, editable=False,
                              help_text='Maps to pycsw:Links')
     crs = models.CharField(max_length=255, null=True, blank=True, help_text='Maps to pycsw:CRS')
     # Custom fields
@@ -253,7 +255,7 @@ class Record(models.Model):
     legend = models.FileField(upload_to=legendFilePath, storage=OverwriteStorage(), null=True, blank=True)
     source_legend = models.FileField(upload_to=sourceLegendFilePath, storage=OverwriteStorage(), null=True, blank=True,editable=False)
 
-    @property 
+    @property
     def bbox(self):
         """
         Transform the bounding box string to bbox array
@@ -276,16 +278,16 @@ class Record(models.Model):
     def metadata_link(self,request ):
         if request:
             return {
-                'endpoint': request.build_absolute_uri('/catalogue/'), 
-                'version': '2.0.2', 
-                'type': 'CSW', 
+                'endpoint': request.build_absolute_uri('/catalogue/'),
+                'version': '2.0.2',
+                'type': 'CSW',
                 'link':request.build_absolute_uri('/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={0}'.format(self.identifier))
             }
         else:
             return {
-                'endpoint': '{0}/catalogue/'.format(settings.BASE_URL), 
-                'version': '2.0.2', 
-                'type': 'CSW', 
+                'endpoint': '{0}/catalogue/'.format(settings.BASE_URL),
+                'version': '2.0.2',
+                'type': 'CSW',
                 'link':'{0}/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={1}'.format(settings.BASE_URL, self.identifier)
             }
 
@@ -305,9 +307,9 @@ class Record(models.Model):
             elif 'WFS' in r['protocol']:
                 _type = 'WFS'
             resource = {
-                'type': _type, 
-                'version': r['version'], 
-                'endpoint': r['linkage'], 
+                'type': _type,
+                'version': r['version'],
+                'endpoint': r['linkage'],
                 'link': sample_link
             }
             resource.update(r)
@@ -353,10 +355,10 @@ class Record(models.Model):
         Get array of ows links from links column
         """
         return self.get_resource_links('ows')
-    
+
     def generate_ows_link(self, endpoint, service_type, service_version):
         """
-        Return a string ows link 
+        Return a string ows link
         """
         if service_version in ("1.1.0", "1.1"):
             service_version = "1.1.0"
@@ -418,9 +420,9 @@ class Record(models.Model):
 
         if service_type == "WFS":
             kvp = {
-                "SERVICE":"WFS", 
-                "REQUEST":"GetFeature", 
-                "VERSION":service_version, 
+                "SERVICE":"WFS",
+                "REQUEST":"GetFeature",
+                "VERSION":service_version,
             }
             parameters = {}
             if self.crs:
@@ -450,39 +452,39 @@ class Record(models.Model):
         elif service_type == "WMS":
             size = self.overview_image_size
             kvp = {
-                "SERVICE":"WMS", 
-                "REQUEST":"GetMap", 
-                "VERSION":service_version, 
-                "LAYERS":self.identifier, 
-                ("SRS", "CRS"):self.crs.upper(), 
+                "SERVICE":"WMS",
+                "REQUEST":"GetMap",
+                "VERSION":service_version,
+                "LAYERS":self.identifier,
+                ("SRS", "CRS"):self.crs.upper(),
                 "WIDTH":size[0],
                 "HEIGHT":size[1],
                 "FORMAT":"image/png"
             }
 
             parameters = {
-                "crs":target_crs, 
-                "format":endpoint_parameters["FORMAT"][1] if "FORMAT" in endpoint_parameters else kvp["FORMAT"], 
+                "crs":target_crs,
+                "format":endpoint_parameters["FORMAT"][1] if "FORMAT" in endpoint_parameters else kvp["FORMAT"],
             }
             if bbox:
                 kvp["BBOX"] = bbox2str(bbox, service_type, service_version)
         elif service_type == "GWC":
             service_type = "WMS"
             kvp = {
-                "SERVICE":"WMS", 
-                "REQUEST":"GetMap", 
-                "VERSION":service_version, 
-                "LAYERS":self.identifier, 
-                ("SRS", "CRS"):self.crs.upper(), 
-                "WIDTH":1024, 
-                "HEIGHT":1024, 
+                "SERVICE":"WMS",
+                "REQUEST":"GetMap",
+                "VERSION":service_version,
+                "LAYERS":self.identifier,
+                ("SRS", "CRS"):self.crs.upper(),
+                "WIDTH":1024,
+                "HEIGHT":1024,
                 "FORMAT":"image/png"
             }
             parameters = {
-                "crs": target_crs, 
-                "format":endpoint_parameters["FORMAT"][1] if "FORMAT" in endpoint_parameters else kvp["FORMAT"], 
-                "width":endpoint_parameters["WIDTH"][1] if "WIDTH" in endpoint_parameters else kvp["WIDTH"], 
-                "height":endpoint_parameters["HEIGHT"][1] if "HEIGHT" in endpoint_parameters else kvp["HEIGHT"], 
+                "crs": target_crs,
+                "format":endpoint_parameters["FORMAT"][1] if "FORMAT" in endpoint_parameters else kvp["FORMAT"],
+                "width":endpoint_parameters["WIDTH"][1] if "WIDTH" in endpoint_parameters else kvp["WIDTH"],
+                "height":endpoint_parameters["HEIGHT"][1] if "HEIGHT" in endpoint_parameters else kvp["HEIGHT"],
             }
             if not bbox:
                 #bbox is null, use australian bbox
@@ -502,7 +504,7 @@ class Record(models.Model):
             raise Exception("Unknown service type({})".format(service_type))
 
         is_exist = lambda k: any([n.upper() in endpoint_parameters for n in (k if isinstance(k, tuple) or isinstance(k, list) else [k])])
-        
+
         querystring = "&".join(["{}={}".format(k[0] if isinstance(k, tuple) or isinstance(k, list) else k, v) for k, v in kvp.items() if not is_exist(k)  ])
         if querystring:
             if original_endpoint[-1] in ("?", "&"):
@@ -513,7 +515,7 @@ class Record(models.Model):
                 link = "{}?{}".format(original_endpoint, querystring)
         else:
             link = original_endpoint
-        
+
         #get the endpoint after removing ows related parameters
         if endpoint_parameters:
             is_exist = lambda k: any([ any([k == key.upper() for key in item_key]) if isinstance(item_key, tuple) or isinstance(item_key, list) else k == item_key.upper()  for item_key in kvp ])
@@ -521,11 +523,10 @@ class Record(models.Model):
             if endpoint_querystring:
                 endpoint = "{}?{}".format(endpoint, endpoint_querystring)
 
-        #schema =  '{{"protocol":"OGC:{0}", "linkage":"{1}", "version":"{2}"}}'.format(service_type.upper(), endpoint, service_version)
         schema = {
-            "protocol":"OGC:{}".format(service_type.upper()), 
-            "linkage":endpoint, 
-            "version":service_version, 
+            "protocol":"OGC:{}".format(service_type.upper()),
+            "linkage":endpoint,
+            "version":service_version,
         }
         schema.update(parameters)
 
@@ -541,19 +542,19 @@ class Record(models.Model):
 
         for style in self.styles.all():
             style_links.append(Record.generate_style_link(style))
-            
+
         return self.update_links(ows_links + style_links)
 
     @staticmethod
     def generate_style_link(style):
         """
-        Return a string style link 
+        Return a string style link
         """
         #schema =  '{{"protocol":"application/{0}", "name":"{1}", "default":"{2}", "linkage":"{3}/media/"}}'.format(style.format.lower(), style.name, style.default, settings.BASE_URL)
         schema = {
-            "protocol" : "application/{}".format(style.format.lower()), 
-            "name": style.name, 
-            "default": style.default, 
+            "protocol" : "application/{}".format(style.format.lower()),
+            "name": style.name,
+            "default": style.default,
             "linkage":"{}/media/".format(settings.BASE_URL)
         }
         return 'None\tNone\t{0}\t{1}/media/{2}'.format(json.dumps(schema,sort_keys=True), settings.BASE_URL, style.content)
@@ -594,7 +595,7 @@ class Record(models.Model):
         if not exist, return None
         """
         return self.default_style("SLD")
-    
+
     @property
     def lyr(self):
         """
@@ -602,7 +603,7 @@ class Record(models.Model):
         if not exist, return None
         """
         return self.default_style("LYR")
-    
+
     @property
     def qml(self):
         """
@@ -610,13 +611,13 @@ class Record(models.Model):
         if not exist, return None
         """
         return self.default_style("QML")
-    
+
     def default_style(self, format):
         try:
             return self.styles.get(format=format, default=True)
         except Style.DoesNotExist:
             return None
-        
+
     """
     Used to check the default style
     for a particular format. If it does
@@ -658,7 +659,7 @@ class Record(models.Model):
         else:
             return default_size
 
-    
+
     def delete(self, using=None):
         if self.active:
             raise ValidationError("Can not delete the active record ({}).".format(self.identifier))
@@ -670,6 +671,7 @@ class Record(models.Model):
 
     class Meta:
         ordering = ['identifier']
+
 
 class RecordEventListener(object):
     @receiver(pre_save, sender=Record)
@@ -690,7 +692,7 @@ class RecordEventListener(object):
                         update_fields.append("modified")
         """
         pass
-    
+
 
 def styleFilePath(instance,filename):
     return "catalogue/styles/{}_{}.{}".format(instance.record.identifier.replace(':','_'),instance.name,instance.format.lower())
@@ -698,11 +700,11 @@ def styleFilePath(instance,filename):
 class Style(models.Model):
     BUILTIN = "builtin"
     FORMAT_CHOICES = (
-        ('SLD', 'SLD'), 
-        ('QML', 'QML'), 
+        ('SLD', 'SLD'),
+        ('QML', 'QML'),
         ('LYR', 'LAYER')
     )
-    record = models.ForeignKey(Record, related_name='styles')
+    record = models.ForeignKey(Record, on_delete=models.PROTECT, related_name='styles')
     name = models.CharField(max_length=255)
     format = models.CharField(max_length=3, choices=FORMAT_CHOICES)
     default = models.BooleanField(default=False)
@@ -734,7 +736,7 @@ class Style(models.Model):
         if not self.pk or self.name == Style.BUILTIN:
             return False
         return True
-            
+
     def delete(self, using=None):
         if self.name == Style.BUILTIN:
             raise ValidationError("Can not delete builtin style.")
@@ -743,6 +745,7 @@ class Style(models.Model):
 
     def __unicode__(self):
         return self.name
+
 
 class StyleEventListener(object):
     @staticmethod
@@ -776,7 +779,7 @@ class StyleEventListener(object):
         elif style_index >= 0:
             links = ows_links + style_links
             instance.record.update_links(links)
-    
+
     @staticmethod
     @receiver(post_delete, sender=Style)
     def remove_style_link(sender, instance, **kwargs):
@@ -788,10 +791,10 @@ class StyleEventListener(object):
             r = json.loads(parts[2])
             if r['name'] == instance.name and instance.format.lower() in r['protocol']:
                 style_links.remove(link)
-    
+
         links = ows_links + style_links
         instance.record.update_links(links)
-    
+
     @staticmethod
     @receiver(pre_save, sender=Style)
     def clear_previous_default_style (sender, instance, **kwargs):
@@ -807,7 +810,7 @@ class StyleEventListener(object):
                     cur_default_style.default=False
                     setattr(cur_default_style,"triggered_default_style_setting",True)
                     cur_default_style.save(update_fields=["default"])
-    
+
     @staticmethod
     @receiver(post_save, sender=Style)
     def set_default_style_on_update (sender, instance, **kwargs):
@@ -820,14 +823,14 @@ class StyleEventListener(object):
                 default_style = instance.record.default_style(instance.format)
                 if not default_style :
                     instance.record.set_default_style(instance.format)
-    
+
     @staticmethod
     @receiver(post_delete, sender=Style)
     def set_default_style_on_delete(sender, instance, **kwargs):
         if instance.default:
             #deleted style is the default style, reset the default style
             instance.record.set_default_style(instance.format)
-    
+
     @staticmethod
     @receiver(post_delete, sender=Style)
     def remove_style_file(sender, instance, **kwargs):
@@ -837,7 +840,7 @@ class StyleEventListener(object):
         if instance.content:
             if os.path.isfile(instance.content.path):
                 os.remove(instance.content.path)
-    
+
 
 class Application(models.Model):
     """
@@ -853,7 +856,6 @@ class Application(models.Model):
     def get_view_name(app):
         return "catalogue_record_{}".format(app)
 
-
     @property
     def records_view(self):
         return Application.get_view_name(self.name)
@@ -863,6 +865,7 @@ class Application(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class ApplicationEventListener(object):
     @staticmethod
@@ -876,7 +879,6 @@ class ApplicationEventListener(object):
             #drop failed, maybe the view does not exist, ignore the exception
             connection._rollback()
 
-
     @staticmethod
     @receiver(pre_save, sender=Application)
     def _pre_save(sender, instance, **args):
@@ -889,12 +891,13 @@ class ApplicationEventListener(object):
             connection._rollback()
             raise ValidationError(e)
 
+
 class ApplicationLayer(models.Model):
     """
     The relationship between application and layer
     """
-    application = models.ForeignKey(Application, blank=False, null=False)
-    layer = models.ForeignKey(Record, null=False, blank=False, limit_choices_to={"active":True})
+    application = models.ForeignKey(Application, on_delete=models.PROTECT, blank=False, null=False)
+    layer = models.ForeignKey(Record, on_delete=models.PROTECT, null=False, blank=False, limit_choices_to={"active":True})
     order = models.PositiveIntegerField(blank=False, null=False)
 
     def __str__(self):
@@ -903,5 +906,3 @@ class ApplicationLayer(models.Model):
     class Meta:
         unique_together = (('application', 'layer'))
         ordering = ['application', 'order', 'layer']
-
-

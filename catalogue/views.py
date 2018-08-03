@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.sites.shortcuts import get_current_site
 from lxml import etree
 from sqlalchemy.ext.declarative import declarative_base
