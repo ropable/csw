@@ -1,7 +1,6 @@
 from confy import env, database
 import os
 from pathlib import Path
-import sys
 
 # Project paths
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -32,7 +31,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'reversion',
-    #'dpaw_utils',
     'django_filters',
     'catalogue',
 ]
@@ -108,12 +106,12 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'],
-			'propagate': True,
+            'propagate': True,
         },
         'django.request': {
             'handlers': ['console'],
             'level': 'WARNING',
-			'propagate': False,
+            'propagate': False,
         },
     }
 }
