@@ -11,7 +11,6 @@ class StyleFileWidget(AdminFileWidget):
     def get_context(self, name, value, attrs):
         context = super(AdminFileWidget, self).get_context(name, value, attrs)
         context['readonly'] = getattr(self, "readonly") if hasattr(self, "readonly") else False
-        print(context)
         return context
 
 
