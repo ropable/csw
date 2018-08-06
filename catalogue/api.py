@@ -4,10 +4,8 @@ from rest_framework.response import Response
 from rest_framework.fields import empty
 import base64
 from django.core.files.base import ContentFile
-import hashlib
 import json
 from django.conf import settings
-from django.db.models.fields.files import FieldFile
 from pycsw.core import util
 
 from .models import Record, Style
@@ -25,31 +23,39 @@ class OwsResourceSerializer(serializers.Serializer):
     gwc_endpoint = serializers.CharField(write_only=True, allow_null=True, default=None)
 
     def run_validation(self, data=empty):
-        result = super(OwsResourceSerializer,self).run_validation(data)
-        if ((data.get('wfs',False) and (not data['wfs_endpoint'] or not data['wfs_version'])) or
-            (data.get('wms',False) and (not data['wms_endpoint'] or not data['wms_version'])) or
-            (data.get('gwc',False) and not data['gwc_endpoint'])):
-            raise serializers.ValidationError("Both endpoint and version must have value if service is enabled.")
-        elif (data.get('gwc',False) and not data['wms']):
+        result = super(OwsResourceSerializer, self).run_validation(data)
+        if ((data.get('wfs', False) and (not data['wfs_endpoint'] or not data['wfs_version'])) or
+            (data.get('wms', False) and (not data['wms_endpoint'] or not data['wms_version'])) or
+                (data.get('gwc', False) and not data['gwc_endpoint'])):
+            raise serializers.ValidationError(
+                "Both endpoint and version must have value if service is enabled.")
+        elif (data.get('gwc', False) and not data['wms']):
             raise serializers.ValidationError("WMS must be enabled if gwc is enabled.")
 
         return result
 
-    def get_links(self,record,validated_data):
+    def get_links(self, record, validated_data):
         links = []
         if validated_data['gwc']:
-            gwc_endpoints = [endpoint.strip() for endpoint in validated_data['gwc_endpoint'].split("^") if endpoint.strip()]
+            gwc_endpoints = [
+                endpoint.strip() for endpoint in validated_data['gwc_endpoint'].split("^") if endpoint.strip()]
             for endpoint in gwc_endpoints:
                 links.append(
                     record.generate_ows_link(endpoint, 'GWC', validated_data['wms_version'])
                 )
         elif validated_data['wms']:
             links.append(
-                record.generate_ows_link(validated_data['wms_endpoint'], 'WMS', validated_data['wms_version'])
+                record.generate_ows_link(
+                    validated_data['wms_endpoint'],
+                    'WMS',
+                    validated_data['wms_version'])
             )
         if validated_data['wfs']:
             links.append(
-                record.generate_ows_link(validated_data['wfs_endpoint'], 'WFS', validated_data['wfs_version'])
+                record.generate_ows_link(
+                    validated_data['wfs_endpoint'],
+                    'WFS',
+                    validated_data['wfs_version'])
             )
         if record.service_type == "WMS":
             record.service_type_version = validated_data['wms_version']
@@ -78,7 +84,7 @@ class StyleSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         try:
             style_content = kwargs.pop("style_content")
-        except:
+        except BaseException:
             style_content = False
 
         super(StyleSerializer, self).__init__(*args, **kwargs)
@@ -86,8 +92,7 @@ class StyleSerializer(serializers.ModelSerializer):
             self.fields['raw_content'] = serializers.SerializerMethodField(read_only=True)
 
     def run_validation(self, data=empty):
-        #print("Run StyleSerializer's run_validation")
-        return super(StyleSerializer,self).run_validation(data)
+        return super(StyleSerializer, self).run_validation(data)
 
     class Meta:
         model = Style
@@ -104,7 +109,7 @@ class LegendSerializer(serializers.Serializer):
     ext = serializers.CharField(write_only=True, allow_null=False)
 
     def run_validation(self, data=empty):
-        return super(LegendSerializer,self).run_validation(data)
+        return super(LegendSerializer, self).run_validation(data)
 
 
 # Record Serializer
@@ -115,7 +120,10 @@ class RecordSerializer(serializers.ModelSerializer):
     identifier = serializers.CharField(max_length=255, read_only=True)
     url = serializers.SerializerMethodField(read_only=True)
     publication_date = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f')
-    modified = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S.%f', allow_null=True, default=None)
+    modified = serializers.DateTimeField(
+        format='%Y-%m-%d %H:%M:%S.%f',
+        allow_null=True,
+        default=None)
     metadata_link = serializers.SerializerMethodField(read_only=True)
     tags = serializers.SerializerMethodField(read_only=True)
     source_legend = LegendSerializer(write_only=True, allow_null=True, required=False)
@@ -126,37 +134,39 @@ class RecordSerializer(serializers.ModelSerializer):
         self.request = kwargs["context"]["request"] if "context" in kwargs and "request" in kwargs["context"] else None
         try:
             style_content = kwargs.pop("style_content")
-        except:
+        except BaseException:
             style_content = False
         try:
             ows_serialize_direction = kwargs.pop('serialize_direction')
-        except:
+        except BaseException:
             ows_serialize_direction = 'read'
 
         super(RecordSerializer, self).__init__(*args, **kwargs)
-        self.fields['styles'] = StyleSerializer(many=True, required=False, style_content=style_content)
+        self.fields['styles'] = StyleSerializer(
+            many=True, required=False, style_content=style_content)
         if ows_serialize_direction == 'write':
             self.fields['ows_resource'] = OwsResourceSerializer(write_only=True, required=False)
         elif ows_serialize_direction == 'read':
             self.fields['ows_resource'] = serializers.SerializerMethodField(read_only=True)
 
     def is_valid(self, raise_exception=False):
-        super(RecordSerializer,self).is_valid(raise_exception)
+        super(RecordSerializer, self).is_valid(raise_exception)
         # transform the bbox data format
         if self.validated_data.get('bounding_box'):
             bounding_box = json.loads(self.validated_data['bounding_box'])
             bounding_box = ','.join([str(o) for o in bounding_box])
             try:
                 self.validated_data['bounding_box'] = util.bbox2wktpolygon(bounding_box)
-            except:
+            except BaseException:
                 traceback.print_exc()
                 raise serializers.ValidationError("Incorrect bounding box dataformat.")
 
     def run_validation(self, data=empty):
-        return super(RecordSerializer,self).run_validation(data)
+        return super(RecordSerializer, self).run_validation(data)
 
     def save(self, **kwargs):
-        self.validated_data['identifier'] = "{}:{}".format(self.validated_data['workspace'], self.validated_data['name'])
+        self.validated_data['identifier'] = "{}:{}".format(
+            self.validated_data['workspace'], self.validated_data['name'])
         # remove fake fields
         if "workspace" in self.validated_data:
             self.validated_data.pop("workspace")
@@ -173,14 +183,20 @@ class RecordSerializer(serializers.ModelSerializer):
             self.new_record = False
 
         except Record.DoesNotExist:
-            #record does not exist, create it
+            # record does not exist, create it
             self.new_record = True
 
-        #update source legend
-        source_legend = self.validated_data.pop("source_legend") if "source_legend" in self.validated_data else None
+        # update source legend
+        source_legend = self.validated_data.pop(
+            "source_legend") if "source_legend" in self.validated_data else None
         if source_legend:
             tmpRecord = Record(identifier=self.validated_data["identifier"])
-            tmpRecord.source_legend.save("upload{}".format(source_legend.get("ext","")), ContentFile(base64.b64decode(source_legend["content"])), save=False)
+            tmpRecord.source_legend.save(
+                "upload{}".format(
+                    source_legend.get(
+                        "ext", "")), ContentFile(
+                    base64.b64decode(
+                        source_legend["content"])), save=False)
             self.validated_data["source_legend"] = tmpRecord.source_legend.name
         elif self.instance and self.instance.source_legend:
             self.instance.source_legend.delete(save=False)
@@ -194,9 +210,10 @@ class RecordSerializer(serializers.ModelSerializer):
                 setattr(tmp_instance, attr, value)
         else:
             tmp_instance = Record(**self.validated_data)
-        self.validated_data["links"] = self.fields["ows_resource"].get_links(tmp_instance,ows_resource_validated_data)
-        result = super(RecordSerializer,self).save(**kwargs)
-        #save styles
+        self.validated_data["links"] = self.fields["ows_resource"].get_links(
+            tmp_instance, ows_resource_validated_data)
+        result = super(RecordSerializer, self).save(**kwargs)
+        # save styles
         if styles_data:
             self._update_styles(styles_data)
         return result
@@ -215,24 +232,31 @@ class RecordSerializer(serializers.ModelSerializer):
             if self.request:
                 return self.request.build_absolute_uri((obj.legend or obj.source_legend).url)
             else:
-                return '{0}{1}'.format(settings.BASE_URL,(obj.legend or obj.source_legend).url)
+                return '{0}{1}'.format(settings.BASE_URL, (obj.legend or obj.source_legend).url)
         else:
             return None
 
     def get_url(self, obj):
         if self.request:
-            return self.request.build_absolute_uri('/catalogue/api/records/{0}.json'.format(obj.identifier))
+            return self.request.build_absolute_uri(
+                '/catalogue/api/records/{0}.json'.format(obj.identifier))
         else:
-            return '{0}{1}'.format(settings.BASE_URL,'/catalogue/api/records/{0}.json'.format(obj.identifier))
+            return '{0}{1}'.format(
+                settings.BASE_URL, '/catalogue/api/records/{0}.json'.format(obj.identifier))
 
-    def _update_styles(self,styles_data):
+    def _update_styles(self, styles_data):
         # save the style to file system with specific file name
-        tmpStyle = Style(record=self.instance,name=Style.BUILTIN,content=None)
+        tmpStyle = Style(record=self.instance, name=Style.BUILTIN, content=None)
         for uploaded_style in styles_data:
             uploaded_style["record"] = self.instance
             uploaded_style["name"] = Style.BUILTIN
-            tmpStyle.format=uploaded_style["format"]
-            tmpStyle.content.save("",ContentFile(base64.b64decode(uploaded_style["content"])),save=False)
+            tmpStyle.format = uploaded_style["format"]
+            tmpStyle.content.save(
+                "",
+                ContentFile(
+                    base64.b64decode(
+                        uploaded_style["content"])),
+                save=False)
             uploaded_style["content"] = tmpStyle.content.name
 
         # get the default style
@@ -251,7 +275,7 @@ class RecordSerializer(serializers.ModelSerializer):
                 default_style[uploaded_style["format"]] = uploaded_style
             elif not origin_default_style.get(uploaded_style["format"].lower(), None) and uploaded_style["format"] not in default_style:
                 # no default style has been set, set the current style as the default style
-                 default_style[uploaded_style["format"]] = uploaded_style
+                default_style[uploaded_style["format"]] = uploaded_style
             # clear the default flag
             uploaded_style["default"] = False
 
@@ -265,12 +289,13 @@ class RecordSerializer(serializers.ModelSerializer):
         for uploaded_style in styles_data:
             styleSerializer._validated_data = uploaded_style
             try:
-                styleSerializer.instance = Style.objects.get(record=self.instance,format=uploaded_style["format"].upper(),name=uploaded_style["name"])
+                styleSerializer.instance = Style.objects.get(
+                    record=self.instance,
+                    format=uploaded_style["format"].upper(),
+                    name=uploaded_style["name"])
             except Style.DoesNotExist:
-                styleSerializer.instance =  None
+                styleSerializer.instance = None
             styleSerializer.save()
-
-
 
     class Meta:
         model = Record
@@ -315,7 +340,10 @@ class RecordViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         style_content = bool(request.GET.get("style_content", False))
-        serializer = self.get_serializer(instance, style_content=style_content, serialize_direction='read')
+        serializer = self.get_serializer(
+            instance,
+            style_content=style_content,
+            serialize_direction='read')
         return Response(serializer.data)
 
     def create(self, request):
@@ -329,10 +357,11 @@ class RecordViewSet(viewsets.ModelViewSet):
             if serializer.new_record:
                 http_status = status.HTTP_201_CREATED
 
-            #return json data
+            # return json data
             record.styles = list(Style.objects.filter(record=record))
             style_content = bool(request.GET.get("style_content", False))
-            serializer = self.get_serializer(record, style_content=style_content, serialize_direction='read')
+            serializer = self.get_serializer(
+                record, style_content=style_content, serialize_direction='read')
             return Response(serializer.data, status=http_status)
         except serializers.ValidationError:
             raise
