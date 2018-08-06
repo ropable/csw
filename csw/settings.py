@@ -1,7 +1,6 @@
 from confy import env, database
 import os
 from pathlib import Path
-import sys
 
 # Project paths
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -32,12 +31,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'reversion',
-    #'dpaw_utils',
     'django_filters',
     'catalogue',
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -82,13 +81,14 @@ USE_L10N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
+# Static files configuration
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = '/static/'
+# Ensure that the media directory exists:
 if not os.path.exists(os.path.join(BASE_DIR, 'media')):
     os.mkdir(os.path.join(BASE_DIR, 'media'))
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATIC_URL = '/static/'
 
 # Logging settings - log to stdout/stderr
 LOGGING = {
@@ -108,12 +108,12 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'],
-			'propagate': True,
+            'propagate': True,
         },
         'django.request': {
             'handlers': ['console'],
             'level': 'WARNING',
-			'propagate': False,
+            'propagate': False,
         },
     }
 }

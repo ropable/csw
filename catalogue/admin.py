@@ -1,14 +1,12 @@
-import sys
-import traceback
-
 from django.contrib import admin
 from django.contrib import messages
 from django.utils.safestring import mark_safe
 from django.conf import settings
 from django.template import Context, Template
-from reversion.admin import VersionAdmin
-
 from dpaw_utils import requests
+from reversion.admin import VersionAdmin
+import sys
+import traceback
 
 from catalogue import models
 from catalogue.forms import RecordForm, StyleForm, ApplicationForm
@@ -36,7 +34,7 @@ class StyleAdmin(admin.ModelAdmin):
         Only want to hide the delete button(link) in the edit page
         """
         if request.path == "/django-admin/catalogue/style/":
-            #request the list page
+            # request the list page
             return super(StyleAdmin, self).has_delete_permission(request, obj)
         elif obj and obj.name == models.Style.BUILTIN:
             # request the edit page and the style is a builtin style
@@ -46,24 +44,28 @@ class StyleAdmin(admin.ModelAdmin):
 
     def custom_delete_selected(self, request, queryset):
         if request.POST.get('post') != 'yes':
-            #the confirm page, or user not confirmed
+            # the confirm page, or user not confirmed
             return self.default_delete_action[0](self, request, queryset)
 
-        #user confirm to delete the publishes, execute the custom delete logic.
-        result = None
+        # user confirm to delete the publishes, execute the custom delete logic.
         failed_objects = []
 
         for style in queryset:
             try:
                 style.delete()
-            except:
+            except BaseException:
                 error = sys.exc_info()
-                failed_objects.append((style.identifier, traceback.format_exception_only(error[0], error[1])))
-                #remove failed, continue to process the next publish
+                failed_objects.append(
+                    (style.identifier,
+                     traceback.format_exception_only(
+                         error[0],
+                         error[1])))
+                # remove failed, continue to process the next publish
                 continue
 
         if failed_objects:
-            messages.warning(request, mark_safe("Some selected styles are deleted failed:<ul>{0}</ul>".format("".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects]))))
+            messages.warning(request, mark_safe("Some selected styles are deleted failed:<ul>{0}</ul>".format(
+                "".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects]))))
         else:
             messages.success(request, "All selected styles are deleted successfully")
 
@@ -71,7 +73,10 @@ class StyleAdmin(admin.ModelAdmin):
         actions = super(StyleAdmin, self).get_actions(request)
         self.default_delete_action = actions['delete_selected']
         del actions['delete_selected']
-        actions['delete_selected'] = (StyleAdmin.custom_delete_selected, self.default_delete_action[1], self.default_delete_action[2])
+        actions['delete_selected'] = (
+            StyleAdmin.custom_delete_selected,
+            self.default_delete_action[1],
+            self.default_delete_action[2])
         return actions
 
 
@@ -79,16 +84,20 @@ class StyleAdmin(admin.ModelAdmin):
 class RecordAdmin(VersionAdmin):
     list_display = ("identifier", "service_type", "crs", "title", "active", "publication_date")
     inlines = [StyleInline, ]
-    readonly_fields = ('service_type', 'service_type_version', 'crs', '_bounding_box','source_legend', "_ows_resources", 'active', 'publication_date', 'modified', 'insert_date')
+    readonly_fields = (
+        'service_type',
+        'service_type_version',
+        'crs',
+        '_bounding_box',
+        'source_legend',
+        "_ows_resources",
+        'active',
+        'publication_date',
+        'modified',
+        'insert_date')
     search_fields = ["identifier", 'service_type']
     form = RecordForm
     filter_horizontal = ["tags"]
-    """
-    def get_readonly_fields(self, request, obj=None):
-        if obj:
-            return self.readonly_fields + ('identifier', )
-        return self.readonly_fields
-    """
     html = """<table>
 <tr>
     <th style='width:100px;border-bottom:None'>Min X</th>
@@ -104,6 +113,7 @@ class RecordAdmin(VersionAdmin):
 </tr>
 </table>
 """
+
     def _publish_required(self, instance):
         return instance.modified > instance.publication_date if instance.modified and instance.publication_date else False
     _publish_required.short_description = "Publish Required"
@@ -140,12 +150,14 @@ class RecordAdmin(VersionAdmin):
 {% endfor %}
 </table>
 """
+
     def _ows_resources(self, instance):
         resources = ""
         ows_resources = instance.ows_resource
         if ows_resources:
             for resource in ows_resources:
-                resource["tileSize"] = "{}x{}".format(resource["width"], resource["height"]) if "width" in resource else ""
+                resource["tileSize"] = "{}x{}".format(
+                    resource["width"], resource["height"]) if "width" in resource else ""
             context = Context({"resources": ows_resources})
             resources = Template(self.ows_resources_template).render(context)
 
@@ -168,7 +180,7 @@ class RecordAdmin(VersionAdmin):
         Only want to hide the delete button(link) in the edit page
         """
         if request.path == "/django-admin/catalogue/record/":
-            #request the list page
+            # request the list page
             return super(RecordAdmin, self).has_delete_permission(request, obj)
         elif obj and obj.active:
             # request the edit page and the record is active
@@ -190,11 +202,14 @@ class RecordAdmin(VersionAdmin):
                 messages.success(request, "All selected records are published successfully")
             else:
                 for layer, status in result.items():
-                    if layer == "status": continue
-                    if status["status"]: continue
+                    if layer == "status":
+                        continue
+                    if status["status"]:
+                        continue
                     failed_objects.append((layer, status["message"]))
                 if failed_objects:
-                    messages.warning(request, mark_safe("Some selected records are published failed:<ul>{0}</ul>".format("".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects]))))
+                    messages.warning(request, mark_safe("Some selected records are published failed:<ul>{0}</ul>".format(
+                        "".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects]))))
                 else:
                     messages.success(request, "All selected records are published successfully")
 
@@ -205,24 +220,28 @@ class RecordAdmin(VersionAdmin):
 
     def custom_delete_selected(self, request, queryset):
         if request.POST.get('post') != 'yes':
-            #the confirm page, or user not confirmed
+            # the confirm page, or user not confirmed
             return self.default_delete_action[0](self, request, queryset)
 
-        #user confirm to delete the publishes, execute the custom delete logic.
-        result = None
+        # user confirm to delete the publishes, execute the custom delete logic.
         failed_objects = []
 
         for record in queryset:
             try:
                 record.delete()
-            except:
+            except BaseException:
                 error = sys.exc_info()
-                failed_objects.append((record.identifier, traceback.format_exception_only(error[0], error[1])))
-                #remove failed, continue to process the next publish
+                failed_objects.append(
+                    (record.identifier,
+                     traceback.format_exception_only(
+                         error[0],
+                         error[1])))
+                # remove failed, continue to process the next publish
                 continue
 
         if failed_objects:
-            messages.warning(request, mark_safe("Some selected records are deleted failed:<ul>{0}</ul>".format("".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects]))))
+            messages.warning(request, mark_safe("Some selected records are deleted failed:<ul>{0}</ul>".format(
+                "".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects]))))
         else:
             messages.success(request, "All selected records are deleted successfully")
 
@@ -232,7 +251,10 @@ class RecordAdmin(VersionAdmin):
         actions = super(RecordAdmin, self).get_actions(request)
         self.default_delete_action = actions['delete_selected']
         del actions['delete_selected']
-        actions['delete_selected'] = (RecordAdmin.custom_delete_selected, self.default_delete_action[1], self.default_delete_action[2])
+        actions['delete_selected'] = (
+            RecordAdmin.custom_delete_selected,
+            self.default_delete_action[1],
+            self.default_delete_action[2])
         return actions
 
 
@@ -244,7 +266,8 @@ class OrganizationAdmin(admin.ModelAdmin):
 
     def _address(self, instance):
 
-        return "{0}, {1} {2} {3}, {4} ".format(instance.address or "", instance.city or "", instance.state_or_province or "", instance.postal_code or "" , instance.country or "")
+        return "{0}, {1} {2} {3}, {4} ".format(instance.address or "", instance.city or "",
+                                               instance.state_or_province or "", instance.postal_code or "", instance.country or "")
 
     _address.short_description = "address"
 
@@ -258,11 +281,7 @@ class OrganizationAdmin(admin.ModelAdmin):
 @admin.register(models.PycswConfig)
 class PycswConfigAdmin(admin.ModelAdmin):
     list_display = ("title", "language", "point_of_contact", "inspire_enabled", "transactions")
-
     actions = None
-
-    #def has_add_permission(self, request):
-    #    return False
 
     def has_delete_permission(self, request, obj=None):
         return False
