@@ -124,7 +124,7 @@ class RecordAdmin(VersionAdmin):
         if instance.bounding_box:
             bounding_box = instance.bbox or ["-", "-", "-", "-"]
 
-        return self.html.format(*bounding_box)
+        return mark_safe(self.html.format(*bounding_box))
 
     _bounding_box.allow_tags = True
     _bounding_box.short_description = "bounding_box"
