@@ -173,7 +173,7 @@ class Organization(models.Model):
     postal_code = models.CharField(max_length=30, blank=True)
     country = models.CharField(max_length=50, blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.short_name
 
 
@@ -189,7 +189,7 @@ class Collaborator(models.Model):
     hours_of_service = models.CharField(max_length=50, blank=True)
     contact_instructions = models.CharField(max_length=255, blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return "{}({})".format(self.name, self.organization.short_name)
 
 
@@ -290,7 +290,7 @@ class Record(models.Model):
         else:
             return None
 
-    def __unicode__(self):
+    def __str__(self):
         return self.identifier
 
     def metadata_link(self, request):
@@ -797,7 +797,7 @@ class Style(models.Model):
         else:
             super(Style, self).delete(using)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 
