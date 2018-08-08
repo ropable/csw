@@ -10,7 +10,7 @@ class StyleFileWidget(AdminFileWidget):
 
     def get_context(self, name, value, attrs):
         context = super(AdminFileWidget, self).get_context(name, value, attrs)
-        context['readonly'] = getattr(self, "readonly") if hasattr(self, "readonly") else False
+        context['widget']['readonly'] = getattr(self, "readonly") if hasattr(self, "readonly") else False
         return context
 
 
@@ -61,6 +61,8 @@ class StyleForm(forms.ModelForm):
             self.fields['name'].widget.attrs['readonly'] = True
             if kwargs['instance'].name == Style.BUILTIN:
                 self.fields['content'].widget.readonly = True
+            else:
+                self.fields['content'].widget.readonly = False
             self.fields['content'].widget.is_required = True
             self.fields['record'].widget = self.fields['record'].widget.widget
             self.fields['record'].widget.attrs['readonly'] = True

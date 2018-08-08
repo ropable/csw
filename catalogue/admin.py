@@ -90,7 +90,7 @@ class RecordAdmin(VersionAdmin):
         'crs',
         '_bounding_box',
         'source_legend',
-        "_ows_resources",
+        '_ows_resources',
         'active',
         'publication_date',
         'modified',
