@@ -90,7 +90,7 @@ class RecordAdmin(VersionAdmin):
         'crs',
         '_bounding_box',
         'source_legend',
-        "_ows_resources",
+        '_ows_resources',
         'active',
         'publication_date',
         'modified',
@@ -124,7 +124,7 @@ class RecordAdmin(VersionAdmin):
         if instance.bounding_box:
             bounding_box = instance.bbox or ["-", "-", "-", "-"]
 
-        return self.html.format(*bounding_box)
+        return mark_safe(self.html.format(*bounding_box))
 
     _bounding_box.allow_tags = True
     _bounding_box.short_description = "bounding_box"
