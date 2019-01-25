@@ -229,20 +229,12 @@ class RecordSerializer(serializers.ModelSerializer):
 
     def get_legend(self, obj):
         if obj.legend or obj.source_legend:
-            if self.request:
-                return self.request.build_absolute_uri((obj.legend or obj.source_legend).url)
-            else:
-                return '{0}{1}'.format(settings.BASE_URL, (obj.legend or obj.source_legend).url)
+            return '{}{}'.format(settings.BASE_URL, (obj.legend or obj.source_legend).url)
         else:
             return None
 
     def get_url(self, obj):
-        if self.request:
-            return self.request.build_absolute_uri(
-                '/catalogue/api/records/{0}.json'.format(obj.identifier))
-        else:
-            return '{0}{1}'.format(
-                settings.BASE_URL, '/catalogue/api/records/{0}.json'.format(obj.identifier))
+        return '{}{}'.format(settings.BASE_URL, '/catalogue/api/records/{0}.json'.format(obj.identifier))
 
     def _update_styles(self, styles_data):
         # save the style to file system with specific file name

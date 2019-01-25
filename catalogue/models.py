@@ -296,10 +296,10 @@ class Record(models.Model):
     def metadata_link(self, request):
         if request:
             return {
-                'endpoint': request.build_absolute_uri('/catalogue/'),
+                'endpoint': '{}/catalogue/'.format(settings.BASE_URL),
                 'version': '2.0.2',
                 'type': 'CSW',
-                'link': request.build_absolute_uri('/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={0}'.format(self.identifier))
+                'link': '{}/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={}'.format(settings.BASE_URL, self.identifier),
             }
         else:
             return {
@@ -452,17 +452,11 @@ class Record(models.Model):
         else:
             shrinked_bbox = None
 
-        def bbox2str(
-            bbox,
-            service,
-            version): return ', '.join(
-            str(c) for c in bbox) if service != "WFS" or version == "1.0.0" else ", ".join(
-            [
-                str(c) for c in [
-                    bbox[1],
-                    bbox[0],
-                    bbox[3],
-                    bbox[2]]])
+        def bbox2str(bbox, service, version):
+            if service != "WFS" or version == "1.0.0":
+                return ', '.join(str(c) for c in bbox)
+            else:
+                return ", ".join([str(c) for c in [bbox[1], bbox[0], bbox[3], bbox[2]]])
 
         if service_type == "WFS":
             kvp = {
@@ -549,8 +543,10 @@ class Record(models.Model):
         else:
             raise Exception("Unknown service type({})".format(service_type))
 
-        def is_exist(k): return any([n.upper() in endpoint_parameters for n in (
-            k if isinstance(k, tuple) or isinstance(k, list) else [k])])
+        def is_exist(k):
+            return any([n.upper() in endpoint_parameters for n in (
+                k if isinstance(k, tuple) or isinstance(k, list) else [k])]
+            )
 
         querystring = "&".join(["{}={}".format(k[0] if isinstance(k, tuple) or isinstance(
             k, list) else k, v) for k, v in kvp.items() if not is_exist(k)])
@@ -566,8 +562,9 @@ class Record(models.Model):
 
         # get the endpoint after removing ows related parameters
         if endpoint_parameters:
-            def is_exist(k): return any([any([k == key.upper() for key in item_key]) if isinstance(
-                item_key, tuple) or isinstance(item_key, list) else k == item_key.upper() for item_key in kvp])
+            def is_exist(k):
+                return any([any([k == key.upper() for key in item_key]) if isinstance(
+                    item_key, tuple) or isinstance(item_key, list) else k == item_key.upper() for item_key in kvp])
             endpoint_querystring = "&".join(["{}={}".format(*v)
                                              for k, v in endpoint_parameters.items() if not is_exist(k)])
             if endpoint_querystring:
@@ -718,9 +715,6 @@ class Record(models.Model):
             raise ValidationError("Can not delete the active record ({}).".format(self.identifier))
         else:
             super(Record, self).delete(using)
-
-    def __str__(self):
-        return self.identifier
 
     class Meta:
         ordering = ['identifier']
