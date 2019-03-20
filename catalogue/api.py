@@ -350,7 +350,7 @@ class RecordViewSet(viewsets.ModelViewSet):
                 http_status = status.HTTP_201_CREATED
 
             # return json data
-            record.styles = list(Style.objects.filter(record=record))
+            record.styles.set(list(Style.objects.filter(record=record)))
             style_content = bool(request.GET.get("style_content", False))
             serializer = self.get_serializer(
                 record, style_content=style_content, serialize_direction='read')
