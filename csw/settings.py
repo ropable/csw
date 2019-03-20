@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'reversion',
     'django_filters',
+    'rest_framework',
     'catalogue',
 ]
 MIDDLEWARE = [
