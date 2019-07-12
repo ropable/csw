@@ -1,4 +1,5 @@
-from confy import env, database
+from dbca_utils.utils import env
+import dj_database_url
 import os
 from pathlib import Path
 
@@ -70,7 +71,7 @@ TEMPLATES = [
 
 
 # Database configuration
-DATABASES = {'default': database.config()}
+DATABASES = {'default': dj_database_url.config()}
 
 
 # Internationalization

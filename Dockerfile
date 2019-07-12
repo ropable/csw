@@ -1,19 +1,13 @@
 # Prepare the base environment.
-FROM python:3.6.6-slim-stretch as builder_base
+FROM python:3.6.6-slim-stretch as builder_base_csw
 MAINTAINER asi@dbca.wa.gov.au
 RUN apt-get update -y \
-  && apt-get install --no-install-recommends -y wget git libmagic-dev gcc binutils libproj-dev gdal-bin python3-dev \
-  && rm -rf /var/lib/apt/lists/*
-
-# Install some extra system libs required for this project.
-FROM builder_base as builder_base_extra
-RUN apt-get update -y \
-  && apt-get install --no-install-recommends -y gcc libxml2-dev libxslt1-dev zlib1g-dev \
+  && apt-get install --no-install-recommends -y wget git libmagic-dev gcc binutils libproj-dev gdal-bin python3-dev libxml2-dev libxslt1-dev zlib1g-dev \
   && rm -rf /var/lib/apt/lists/* \
   && pip install --upgrade pip
 
 # Install Python libs from requirements.txt.
-FROM builder_base_extra as python_libs_csw
+FROM builder_base_csw as python_libs_csw
 WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
