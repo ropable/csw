@@ -1,7 +1,7 @@
 # Prepare the base environment.
-FROM python:3.7.2-slim-stretch as builder_base_csw
+FROM python:3.7-slim-buster as builder_base_csw
 MAINTAINER asi@dbca.wa.gov.au
-RUN apt-get update \
+RUN apt-get update -y \
   && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y wget git libmagic-dev gcc binutils libproj-dev gdal-bin python3-dev libxml2-dev libxslt1-dev zlib1g-dev \
   && rm -rf /var/lib/apt/lists/* \
