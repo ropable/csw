@@ -18,10 +18,10 @@ FROM python_libs_csw
 WORKDIR /app
 COPY catalogue ./catalogue
 COPY csw ./csw
-COPY gunicorn.ini manage.py ./
+COPY gunicorn.py manage.py ./
 RUN python manage.py collectstatic --noinput
 # Run the application as the www-data user.
 USER www-data
 EXPOSE 8080
 HEALTHCHECK --interval=1m --timeout=10s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/catalogue/api/records/?format=json"]
-CMD ["gunicorn", "csw.wsgi", "--config", "gunicorn.ini"]
+CMD ["gunicorn", "csw.wsgi", "--config", "gunicorn.py"]
