@@ -7,7 +7,7 @@ RUN apt-get update -y \
   && rm -rf /var/lib/apt/lists/* \
   && pip install --upgrade pip
 
-# Install Python libs from requirements.txt.
+# Install Python libs from pyproject.toml.
 FROM builder_base_csw as python_libs_csw
 WORKDIR /app
 ENV POETRY_VERSION=1.0.5
