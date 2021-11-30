@@ -29,5 +29,5 @@ mixer = "6.1.3"
 ipython = "^7.17.0"
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["poetry>=1.1.12"]
 build-backend = "poetry.masonry.api"

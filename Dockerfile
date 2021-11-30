@@ -1,6 +1,8 @@
 # Prepare the base environment.
-FROM python:3.7.8-slim-buster as builder_base_csw
+FROM python:3.7.9-slim-buster as builder_base_csw
 MAINTAINER asi@dbca.wa.gov.au
+LABEL org.opencontainers.image.source https://github.com/dbca-wa/csw
+
 RUN apt-get update -y \
   && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y wget git libmagic-dev gcc binutils libproj-dev gdal-bin python3-dev libxml2-dev libxslt1-dev zlib1g-dev \
@@ -10,7 +12,7 @@ RUN apt-get update -y \
 # Install Python libs from pyproject.toml.
 FROM builder_base_csw as python_libs_csw
 WORKDIR /app
-ENV POETRY_VERSION=1.0.5
+ENV POETRY_VERSION=1.1.12
 RUN pip install "poetry==$POETRY_VERSION"
 RUN python -m venv /venv
 COPY poetry.lock pyproject.toml /app/
@@ -27,5 +29,4 @@ RUN python manage.py collectstatic --noinput
 # Run the application as the www-data user.
 USER www-data
 EXPOSE 8080
-HEALTHCHECK --interval=1m --timeout=10s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/catalogue/api/records/?format=json"]
 CMD ["gunicorn", "csw.wsgi", "--config", "gunicorn.py"]

@@ -41,4 +41,4 @@ Run console commands manually:
 
 To build a new Docker image from the `Dockerfile`:
 
-    docker image build -t dbcawa/csw .
+    docker image build -t ghcr.io/dbca-wa/csw .
