@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [tool.poetry.dependencies]
 python = "^3.7"
 psycopg2-binary = "2.8.6"
-Django = "2.2.25"
+Django = "2.2.27"
 django-extensions = "2.1.9"
 django-dotenv = "1.4.2"
 dbca-utils = {git = "https://github.com/dbca-wa/dbca-utils.git", rev = "1.0.1"}
