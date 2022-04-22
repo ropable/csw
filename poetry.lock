@@ -89,7 +89,7 @@ static3 = "*"
 
 [[package]]
 name = "django"
-version = "2.2.27"
+version = "2.2.28"
 description = "A high-level Python Web framework that encourages rapid development and clean, pragmatic design."
 category = "main"
 optional = false
@@ -547,7 +547,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "f5201cbbd55c04e8f2567239cbebd5df3a5a2b53a0de799c3c665cafc8316ce5"
+content-hash = "69f0d225dd2dbbeb63426798e5e9c931775a8a451dd7a6196d22fafd8b1bef80"
 
 [metadata.files]
 appnope = [
@@ -583,8 +583,8 @@ dj-static = [
     {file = "dj-static-0.0.6.tar.gz", hash = "sha256:032ec1c532617922e6e3e956d504a6fb1acce4fc1c7c94612d0fda21828ce8ef"},
 ]
 django = [
-    {file = "Django-2.2.27-py3-none-any.whl", hash = "sha256:90763c764738586b11d7e1f44828032c153366e43ad7f782908193a1bb2d6d92"},
-    {file = "Django-2.2.27.tar.gz", hash = "sha256:1ee37046b0bf2b61e83b3a01d067323516ec3b6f2b17cd49b1326dd4ba9dc913"},
+    {file = "Django-2.2.28-py3-none-any.whl", hash = "sha256:365429d07c1336eb42ba15aa79f45e1c13a0b04d5c21569e7d596696418a6a45"},
+    {file = "Django-2.2.28.tar.gz", hash = "sha256:0200b657afbf1bc08003845ddda053c7641b9b24951e52acd51f6abda33a7413"},
 ]
 django-dotenv = [
     {file = "django-dotenv-1.4.2.tar.gz", hash = "sha256:3812bb0f4876cf31f902aad140f0645e120e51ee30eb7c40c22050f58a0e4adb"},
