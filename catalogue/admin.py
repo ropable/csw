@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.utils.safestring import mark_safe
 from django.conf import settings
 from django.template import Context, Template
-from dbca_utils import requests
+import requests
 from reversion.admin import VersionAdmin
 import sys
 import traceback

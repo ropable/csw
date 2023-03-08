@@ -135,14 +135,11 @@ class Csw(PyCsw):
 class Mapper(BaseMapper):
     def _configure_pks(self):
         self.tables = sql_util.find_tables(self.mapped_table)
-
         self._pks_by_table = {}
         self._cols_by_table = {}
+        all_cols = sqlalchemy_util.column_set(chain(*[col.proxy_set for col in self._columntoproperty]))
 
-        all_cols = sqlalchemy_util.column_set(
-            chain(*[col.proxy_set for col in self._columntoproperty]))
-
-        pk_cols = sqlalchemy_util.column_set(c for c in all_cols if c.primary_key)
+        sqlalchemy_util.column_set(c for c in all_cols if c.primary_key)
         # identify primary key columns which are also mapped by this mapper.
         tables = set(self.tables + [self.mapped_table])
         self._all_tables.update(tables)
