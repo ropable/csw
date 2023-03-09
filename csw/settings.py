@@ -1,17 +1,21 @@
+
 from dbca_utils.utils import env
 import dj_database_url
 import os
 from pathlib import Path
+import sys
 
-# Project paths
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = str(Path(__file__).resolve().parents[1])
+PROJECT_DIR = str(Path(__file__).resolve().parents[0])
+# Add PROJECT_DIR to the system path.
+sys.path.insert(0, PROJECT_DIR)
 
-
-# Application definition
+# Settings defined in environment variables.
 DEBUG = env('DEBUG', False)
 SECRET_KEY = env('SECRET_KEY', 'PlaceholderSecretKey')
 CSRF_COOKIE_SECURE = env('CSRF_COOKIE_SECURE', False)
+CSRF_COOKIE_HTTPONLY = env('CSRF_COOKIE_HTTPONLY', False)
 SESSION_COOKIE_SECURE = env('SESSION_COOKIE_SECURE', False)
 if not DEBUG:
     ALLOWED_HOSTS = env('ALLOWED_DOMAINS', '').split(',')
@@ -20,6 +24,7 @@ else:
 INTERNAL_IPS = ['127.0.0.1', '::1']
 ROOT_URLCONF = 'csw.urls'
 WSGI_APPLICATION = 'csw.wsgi.application'
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 BASE_URL = env('BASE_URL', 'https://csw.dbca.wa.gov.au')
 BORG_URL = env('BORG_URL', 'https://borg.dbca.wa.gov.au')
 INSTALLED_APPS = [
@@ -36,9 +41,11 @@ INSTALLED_APPS = [
     'rest_framework',
     'catalogue',
 ]
+
 MIDDLEWARE = [
     'csw.middleware.HealthCheckMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -48,6 +55,7 @@ MIDDLEWARE = [
     'reversion.middleware.RevisionMiddleware',
     'dbca_utils.middleware.SSOLoginMiddleware',
 ]
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -72,20 +80,24 @@ TEMPLATES = [
 
 
 # Database configuration
-DATABASES = {'default': dj_database_url.config()}
+DATABASES = {
+    # Defined in DATABASE_URL env variable.
+    'default': dj_database_url.config(),
+}
 
 
 # Internationalization
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Australia/Perth'
-USE_I18N = True
-USE_L10N = True
+USE_I18N = False
 USE_TZ = True
+TIME_ZONE = 'Australia/Perth'
+LANGUAGE_CODE = 'en-us'
 
 
 # Static files configuration
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_ROOT = STATIC_ROOT
 # Ensure that the media directory exists:
 if not os.path.exists(os.path.join(BASE_DIR, 'media')):
     os.mkdir(os.path.join(BASE_DIR, 'media'))
@@ -97,8 +109,7 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'console': {'format': '%(name)-12s %(message)s'},
-        'verbose': {'format': '%(asctime)s %(levelname)-8s %(message)s'},
+        'console': {'format': '%(asctime)s %(levelname)-8s %(name)-8s %(message)s'},
     },
     'handlers': {
         'console': {
@@ -108,14 +119,9 @@ LOGGING = {
         },
     },
     'loggers': {
-        'django': {
+        '': {
             'handlers': ['console'],
-            'propagate': True,
-        },
-        'django.request': {
-            'handlers': ['console'],
-            'level': 'WARNING',
-            'propagate': False,
+            'level': 'DEBUG' if DEBUG else 'INFO',
         },
     }
 }
