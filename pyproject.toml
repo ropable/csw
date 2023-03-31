@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "csw"
-version = "1.3.0"
+version = "1.3.2"
 description = "Catalogue service for spatial records over HTTP in the Department of Biodiversity, Conservation and Attractions."
 authors = ["ASU <asu@dbca.wa.gov.au>"]
 license = "Apache-2.0"
