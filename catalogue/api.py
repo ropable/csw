@@ -7,8 +7,9 @@ from django.core.files.base import ContentFile
 import json
 from django.conf import settings
 from pycsw.core import util
-
+from django.http import HttpResponse, JsonResponse
 from .models import Record, Style
+from catalogue import models as catalogue_models
 
 
 # Ows Resource Serializer
@@ -359,3 +360,46 @@ class RecordViewSet(viewsets.ModelViewSet):
             raise
         except Exception as e:
             traceback.print_exc()
+
+
+def application_record(request):
+    rows=[]
+    application_name = request.GET.get("application_name", None)
+    if application_name:
+        application = catalogue_models.Application.objects.filter(name=application_name)
+        if application.count() > 0:
+            first_record = application[0]
+            for ar in first_record.records.all():
+                row = {}
+                row['abstract'] = ar.abstract
+                row['any_text'] = ar.any_text
+                row['bounding_box'] = ar.bounding_box
+                row['crs'] = ar.crs
+                row['id'] = ar.id
+                row['identifier'] = ar.identifier
+                row['insert_date'] = str(ar.insert_date)
+                row['keywords'] = ar.keywords
+                row['legend'] = ''
+
+                if ar.legend:
+                    row['legend'] = request.build_absolute_uri(ar.legend.url)
+                row['metadata_link'] = {'endpoint': '', 'link': '', 'type': '', 'version': ''} 
+                if ar.metadata_link:
+                    row['metadata_link'] = ar.metadata_link(request)
+                row['modified'] = str(ar.modified)
+                row['ows_resource'] =  ar.ows_resource
+                row['publication_date'] = str(ar.publication_date)
+                row['service_type'] = ar.service_type
+                row['service_type_version'] = ar.service_type_version
+                row['styles'] = []
+                row['tags'] = []
+                for t in ar.tags.all():
+                    tag_row = {'description': t.description, 'name': t.name}
+                    row['tags'].append(tag_row)
+
+                row['title'] = ar.title
+                row['url'] = '{}{}'.format(settings.BASE_URL, '/catalogue/api/records/{0}.json'.format(ar.identifier)) 
+                rows.append(row)
+
+    return HttpResponse(json.dumps(rows), content_type='application/json')
+
