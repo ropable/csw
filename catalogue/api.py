@@ -402,7 +402,7 @@ def application_record(request):
                 rows.append(row)
 
     response = HttpResponse(json.dumps(rows), content_type='application/json')
-    response['Access-Control-Allow-Origin'] = '*'
+    response['Access-Control-Allow-Origin'] = settings.CORS_URL 
     response['Access-Control-Allow-Credentials'] = 'true'
     response['Access-Control-Allow-Headers'] = '*'
     return response
