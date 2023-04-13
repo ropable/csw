@@ -404,7 +404,7 @@ def application_record(request):
     response = HttpResponse(json.dumps(rows), content_type='application/json')
     response['Access-Control-Allow-Origin'] = '*'
     response['Access-Control-Allow-Credentials'] = 'true'
-    response['Access-Control-Allow-Headers'] '*'
+    response['Access-Control-Allow-Headers'] = '*'
     return response
 
 
