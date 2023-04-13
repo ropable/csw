@@ -401,5 +401,8 @@ def application_record(request):
                 row['url'] = '{}{}'.format(settings.BASE_URL, '/catalogue/api/records/{0}.json'.format(ar.identifier)) 
                 rows.append(row)
 
-    return HttpResponse(json.dumps(rows), content_type='application/json')
+    response = HttpResponse(json.dumps(rows), content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
 
