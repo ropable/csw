@@ -364,7 +364,7 @@ class RecordViewSet(viewsets.ModelViewSet):
 
 def application_record(request):
     rows=[]
-    application_name = request.GET.get("application_name", None)
+    application_name = request.GET.get("application__name", None)
     if application_name:
         application = catalogue_models.Application.objects.filter(name=application_name)
         if application.count() > 0:
