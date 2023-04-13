@@ -5,7 +5,7 @@ LABEL org.opencontainers.image.source https://github.com/dbca-wa/csw
 
 RUN apt-get update -y \
   && apt-get upgrade -y \
-  && apt-get install -y libmagic-dev gcc binutils gdal-bin proj-bin python3-dev libpq-dev gzip curl \
+  && apt-get install -y libmagic-dev gcc binutils gdal-bin proj-bin python3-dev libpq-dev gzip curl git vim \
   && rm -rf /var/lib/apt/lists/* \
   && pip install --upgrade pip
 
