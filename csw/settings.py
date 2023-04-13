@@ -27,6 +27,8 @@ WSGI_APPLICATION = 'csw.wsgi.application'
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 BASE_URL = env('BASE_URL', 'https://csw.dbca.wa.gov.au')
 BORG_URL = env('BORG_URL', 'https://borg.dbca.wa.gov.au')
+CORS_URL = env('CORS_URL', 'https://sss.dbca.wa.gov.au')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
