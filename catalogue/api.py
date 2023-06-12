@@ -8,7 +8,7 @@ import json
 from django.conf import settings
 from pycsw.core import util
 
-from .models import Record, Style
+from .models import Record, Style, Application
 
 
 # Ows Resource Serializer
@@ -323,7 +323,14 @@ class RecordViewSet(viewsets.ModelViewSet):
     serializer_class = RecordSerializer
     authentication_classes = []
     lookup_field = "identifier"
-    filter_fields = ('application__name',)
+
+    def get_queryset(self):
+        queryset = Record.objects.all()
+        application_name = self.request.query_params.get('application__name')
+        if application_name is not None:
+            application = Application.objects.get(name=application_name)
+            queryset = queryset.filter(application=application)
+        return queryset
 
     def perform_destroy(self, instance):
         instance.active = False
