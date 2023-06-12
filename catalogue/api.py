@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.http import HttpResponse
 import traceback
 from rest_framework import serializers, viewsets, status
 from rest_framework.response import Response
@@ -5,11 +7,9 @@ from rest_framework.fields import empty
 import base64
 from django.core.files.base import ContentFile
 import json
-from django.conf import settings
 from pycsw.core import util
-from django.http import HttpResponse, JsonResponse
-from .models import Record, Style
-from catalogue import models as catalogue_models
+
+from .models import Record, Style, Application
 
 
 # Ows Resource Serializer
@@ -324,7 +324,14 @@ class RecordViewSet(viewsets.ModelViewSet):
     serializer_class = RecordSerializer
     authentication_classes = []
     lookup_field = "identifier"
-    filter_fields = ('application__name',)
+
+    def get_queryset(self):
+        queryset = Record.objects.all()
+        application_name = self.request.query_params.get('application__name')
+        if application_name is not None:
+            application = Application.objects.get(name=application_name)
+            queryset = queryset.filter(application=application)
+        return queryset
 
     def perform_destroy(self, instance):
         instance.active = False
@@ -363,10 +370,10 @@ class RecordViewSet(viewsets.ModelViewSet):
 
 
 def application_record(request):
-    rows=[]
+    rows = []
     application_name = request.GET.get("application__name", None)
     if application_name:
-        application = catalogue_models.Application.objects.filter(name=application_name)
+        application = Application.objects.filter(name=application_name)
         if application.count() > 0:
             first_record = application[0]
             for ar in first_record.records.all():
@@ -383,11 +390,11 @@ def application_record(request):
 
                 if ar.legend:
                     row['legend'] = request.build_absolute_uri(ar.legend.url)
-                row['metadata_link'] = {'endpoint': '', 'link': '', 'type': '', 'version': ''} 
+                row['metadata_link'] = {'endpoint': '', 'link': '', 'type': '', 'version': ''}
                 if ar.metadata_link:
                     row['metadata_link'] = ar.metadata_link(request)
                 row['modified'] = str(ar.modified)
-                row['ows_resource'] =  ar.ows_resource
+                row['ows_resource'] = ar.ows_resource
                 row['publication_date'] = str(ar.publication_date)
                 row['service_type'] = ar.service_type
                 row['service_type_version'] = ar.service_type_version
@@ -398,13 +405,11 @@ def application_record(request):
                     row['tags'].append(tag_row)
 
                 row['title'] = ar.title
-                row['url'] = '{}{}'.format(settings.BASE_URL, '/catalogue/api/records/{0}.json'.format(ar.identifier)) 
+                row['url'] = '{}{}'.format(settings.BASE_URL, '/catalogue/api/records/{0}.json'.format(ar.identifier))
                 rows.append(row)
 
     response = HttpResponse(json.dumps(rows), content_type='application/json')
-    response['Access-Control-Allow-Origin'] = settings.CORS_URL 
+    response['Access-Control-Allow-Origin'] = settings.CORS_URL
     response['Access-Control-Allow-Credentials'] = 'true'
     response['Access-Control-Allow-Headers'] = '*'
     return response
-
-
