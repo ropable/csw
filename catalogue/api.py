@@ -151,7 +151,7 @@ class RecordSerializer(serializers.ModelSerializer):
             self.fields['ows_resource'] = serializers.SerializerMethodField(read_only=True)
 
     def is_valid(self, raise_exception=False):
-        super(RecordSerializer, self).is_valid(raise_exception)
+        super(RecordSerializer, self).is_valid()
         # transform the bbox data format
         if self.validated_data.get('bounding_box'):
             bounding_box = json.loads(self.validated_data['bounding_box'])
