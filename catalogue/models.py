@@ -1,55 +1,15 @@
-"""
-Testing can be done on the command line using httpie:
-
-.. code:: bash
-
-   http --pretty=all --verbose http://localhost:8000/ \
-       service==CSW \
-       version==2.0.2 \
-       request==GetRecordById \
-       Id==c1fdc10a-9170-11e4-ba66-0019995d2a58 \
-       ElementSetName==full \
-       Outputschema==http://www.isotc211.org/2005/gmd \
-       | less -R
-
-Or with the browser and GET requests:
-
-http://localhost:8000/csw/server/?
-    SERVICE=CSW&version=2.0.2&
-    REQUEST=GetRecords&
-    resultType=results&
-    constraintLanguage=CQL_TEXT&
-    constraint_language_version=1.1.0&
-    constraint=TempExtent_begin%20%3E=%20%272014-10-12T00:00:00Z%27&
-    elementSetName=full&
-    outputSchema=http://www.isotc211.org/2005/gmd&
-    typenames=gmd:MD_Metadata
-
-"""
 import math
 import os
 import re
 import json
-
 import pyproj
 
-from django.db import models, connection
+from django.db import models
 from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_save, post_delete, pre_delete
+from django.db.models.signals import post_save, pre_save, post_delete
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.core.files.storage import FileSystemStorage
-
-
-class OverwriteStorage(FileSystemStorage):
-    def get_available_name(self, name, max_length=None):
-        """
-        If the name already exist, remove it
-        """
-        if self.exists(name):
-            self.delete(name)
-        return name
 
 
 slug_re = re.compile(r'^[a-z0-9_]+$')
@@ -57,28 +17,6 @@ validate_slug = RegexValidator(
     slug_re,
     "Slug can only contain lowercase letters, numbers and underscores",
     "invalid")
-
-
-# load extra epsg
-epsg_extra = {}
-try:
-    epsgs = None
-    with open(settings.EPSG_EXTRA_FILE, 'rb') as f:
-        epsgs = f.read()
-    epsg_re = re.compile("^<([0-9]+)>\s+(.+)\s+<>$")
-    epsgs = [l.strip() for l in epsgs.splitlines()]
-    # remove empty lines, comment lines and incorrect lines
-    epsgs = [l for l in epsgs if l and l[0] != "#"]
-    # parse each line
-    for l in epsgs:
-        try:
-            m = epsg_re.match(l)
-            if m:
-                epsg_extra["EPSG:{}".format(m.group(1))] = m.group(2)
-        except BaseException:
-            pass
-except BaseException:
-    pass
 
 
 class PreviewTile(object):
@@ -263,12 +201,10 @@ class Record(models.Model):
         'POLYGON\s*\(\(([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\)\)')
     legend = models.FileField(
         upload_to=legendFilePath,
-        storage=OverwriteStorage(),
         null=True,
         blank=True)
     source_legend = models.FileField(
         upload_to=sourceLegendFilePath,
-        storage=OverwriteStorage(),
         null=True,
         blank=True,
         editable=False)
@@ -416,16 +352,8 @@ class Record(models.Model):
         if bbox:
             if target_crs != self.crs:
                 try:
-                    if self.crs.upper() in epsg_extra:
-                        p1 = pyproj.Proj(epsg_extra[self.crs.upper()])
-                    else:
-                        p1 = pyproj.Proj(init=self.crs)
-
-                    if target_crs in epsg_extra:
-                        p2 = pyproj.Proj(epsg_extra[target_crs])
-                    else:
-                        p2 = pyproj.Proj(init=target_crs)
-
+                    p1 = pyproj.Proj(init=self.crs)
+                    p2 = pyproj.Proj(init=target_crs)
                     bbox[0], bbox[1] = pyproj.transform(p1, p2, bbox[0], bbox[1])
                     bbox[2], bbox[3] = pyproj.transform(p1, p2, bbox[2], bbox[3])
                 except Exception as e:
@@ -757,7 +685,7 @@ class Style(models.Model):
     name = models.CharField(max_length=255)
     format = models.CharField(max_length=3, choices=FORMAT_CHOICES)
     default = models.BooleanField(default=False)
-    content = models.FileField(upload_to=styleFilePath, storage=OverwriteStorage())
+    content = models.FileField(upload_to=styleFilePath)
 
     @property
     def identifier(self):
@@ -913,34 +841,6 @@ class Application(models.Model):
 
     def __str__(self):
         return self.name
-
-
-class ApplicationEventListener(object):
-    @staticmethod
-    @receiver(pre_delete, sender=Application)
-    def _pre_delete(sender, instance, **args):
-        # remove the view for this application
-        try:
-            cursor = connection.cursor()
-            cursor.execute("DROP VIEW {} CASCADE".format(instance.records_view))
-        except BaseException:
-            # drop failed, maybe the view does not exist, ignore the exception
-            connection._rollback()
-
-    @staticmethod
-    @receiver(pre_save, sender=Application)
-    def _pre_save(sender, instance, **args):
-        # create a view for this application
-        try:
-            cursor = connection.cursor()
-            cursor.execute(
-                "CREATE OR REPLACE VIEW {} AS SELECT r.* FROM catalogue_application a join catalogue_applicationlayer l on a.id = l.application_id join catalogue_record r on l.layer_id = r.id WHERE a.name = '{}' and r.active order by l.order, r.identifier".format(
-                    instance.records_view,
-                    instance.name))
-        except Exception as e:
-            # create view failed
-            connection._rollback()
-            raise ValidationError(e)
 
 
 class ApplicationLayer(models.Model):
