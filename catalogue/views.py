@@ -1,3 +1,5 @@
+from django.apps import apps
+from django.conf import settings
 from django.http import HttpResponse
 from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
@@ -16,10 +18,91 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import util as sql_util
 from sqlalchemy.orm.mapper import Mapper as BaseMapper
 
-from catalogue.models import Application
-from catalogue.pycswsettings import build_pycsw_settings
+from catalogue.models import PycswConfig, Application
+import os.path
+
 
 LOGGER = logging.getLogger(__name__)
+
+
+def build_pycsw_settings(app=None):
+    """FIXME: I have no idea what the utility or intent of this function is.
+    """
+    config = PycswConfig.objects.first()
+    if not config:
+        config = PycswConfig()
+
+    if app:
+        url = "{}{}".format(settings.BASE_URL, reverse("csw_app_endpoint", kwargs={"app": app or ""}))
+    else:
+        url = "{}{}".format(settings.BASE_URL, reverse("csw_endpoint"))
+
+    poc = config.point_of_contact
+    org = poc.organization
+    record_table = "public.catalogue_record"
+    mappings_path = os.path.join(apps.get_app_config("catalogue").path, "mappings.py")
+
+    pycsw_settings = {
+        "server": {
+            "home": settings.BASE_DIR,
+            "url": url,
+            "mimetype": "application/xml; charset=UTF-8",
+            "encoding": "UTF-8",
+            "language": "en-US",
+            "maxrecords": str(config.max_records),
+            "profiles": "apiso",
+        },
+        "manager": {
+            "transactions": "true" if config.transactions else "false",
+            "allowed_ips": config.allowed_ips,
+        },
+        "metadata:main": {
+            "identification_title": config.title,
+            "identification_abstract": config.abstract,
+            "identification_keywords": config.keywords,
+            "identification_keywords_type": config.keywords_type,
+            "identification_fees": config.fees,
+            "identification_accessconstraints": config.access_constraints,
+            "provider_name": org.name,
+            "provider_url": org.url,
+            "contact_name": poc.name,
+            "contact_position": poc.position,
+            "contact_address": org.address,
+            "contact_city": org.city,
+            "contact_stateorprovince": org.state_or_province,
+            "contact_postalcode": org.postal_code,
+            "contact_country": org.country,
+            "contact_phone": poc.phone,
+            "contact_fax": poc.fax,
+            "contact_email": poc.email,
+            "contact_url": poc.url,
+            "contact_hours": poc.hours_of_service,
+            "contact_instructions": poc.contact_instructions,
+            "contact_role": "pointOfContact",
+        },
+        "repository": {
+            "mappings": mappings_path,
+            "table": record_table,
+        },
+        "metadata:inspire": {
+            "enabled": "true" if config.inspire_enabled else "false",
+        },
+    }
+    if config.repository_filter != "":
+        pycsw_settings["repository"]["filter"] = config.repository_filter
+    if config.inspire_enabled:
+        inspire = pycsw_settings["metadata:inspire"]
+        inspire["languages_supported"] = config.inspire_languages,
+        inspire["default_language"] = config.inspire_default_language,
+        inspire["date"] = config.inspire_date.isoformat(),
+        inspire["gemet_keywords"] = config.gemet_keywords,
+        inspire["conformity_service"] = config.conformity_service,
+        inspire["contact_name"] = poc.name,
+        inspire["contact_email"] = poc.email,
+        inspire["temp_extent"] = "{}/{}".format(
+            config.temporal_extent_start.isoformat(),
+            config.temporal_extent_end.isoformat()),
+    return pycsw_settings
 
 
 class Csw(PyCsw):
@@ -198,8 +281,7 @@ class CswEndpoint(View):
         server.request = request.body
         server.requesttype = request.method
         status_code, response = server.dispatch()
-        return HttpResponse(response, status=status_code,
-                            content_type="application/xml")
+        return HttpResponse(response, status=status_code, content_type="application/xml")
 
     # TODO - Remove this method once pycsw mainlines the pending pull request
     def _normalize_params(self, query_dict):

@@ -258,7 +258,7 @@ class RecordAdmin(VersionAdmin):
         return actions
 
 
-@admin.register(models.Organization)
+#@admin.register(models.Organization)
 class OrganizationAdmin(admin.ModelAdmin):
     list_display = ("name", "_address", "url")
     inlines = [CollaboratorInline, ]
@@ -278,7 +278,7 @@ class OrganizationAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(models.PycswConfig)
+#@admin.register(models.PycswConfig)
 class PycswConfigAdmin(admin.ModelAdmin):
     list_display = ("title", "language", "point_of_contact", "inspire_enabled", "transactions")
     actions = None

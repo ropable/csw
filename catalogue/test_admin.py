@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 from mixer.backend.django import mixer
-from catalogue.models import Record, Application
+from catalogue.models import Record
 
 
 class RecordAdminTestCase(TestCase):

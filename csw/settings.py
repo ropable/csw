@@ -1,4 +1,3 @@
-
 from dbca_utils.utils import env
 import dj_database_url
 import os
@@ -28,6 +27,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 BASE_URL = env('BASE_URL', 'https://csw.dbca.wa.gov.au')
 BORG_URL = env('BORG_URL', 'https://borg.dbca.wa.gov.au')
 CORS_URL = env('CORS_URL', 'https://sss.dbca.wa.gov.au')
+
+# Assume Azure blob storage is used for media uploads, unless explicitly set as local storage.
+LOCAL_MEDIA_STORAGE = env('LOCAL_MEDIA_STORAGE', False)
+if LOCAL_MEDIA_STORAGE:
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+else:
+    DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
+    AZURE_ACCOUNT_NAME = env('AZURE_ACCOUNT_NAME', 'name')
+    AZURE_ACCOUNT_KEY = env('AZURE_ACCOUNT_KEY', 'key')
+    AZURE_CONTAINER = env('AZURE_CONTAINER', 'container')
+    AZURE_URL_EXPIRATION_SECS = env('AZURE_URL_EXPIRATION_SECS', 3600)  # Default one hour.
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -100,10 +111,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 WHITENOISE_ROOT = STATIC_ROOT
-# Ensure that the media directory exists:
-if not os.path.exists(os.path.join(BASE_DIR, 'media')):
-    os.mkdir(os.path.join(BASE_DIR, 'media'))
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Media uploads
 MEDIA_URL = '/media/'
 
 # Logging settings - log to stdout/stderr
