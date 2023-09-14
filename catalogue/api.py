@@ -230,7 +230,7 @@ class RecordSerializer(serializers.ModelSerializer):
 
     def get_legend(self, obj):
         if obj.legend or obj.source_legend:
-            return '{}{}'.format(settings.BASE_URL, (obj.legend or obj.source_legend).url)
+            return (obj.legend or obj.source_legend).url
         else:
             return None
 
