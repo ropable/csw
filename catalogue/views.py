@@ -40,6 +40,7 @@ def build_pycsw_settings(app=None):
     poc = config.point_of_contact
     org = poc.organization
     record_table = "public.catalogue_record"
+    db_connection = os.environ.get("DATABASE_URL", "").replace("postgis", "postgresql")
     mappings_path = os.path.join(apps.get_app_config("catalogue").path, "mappings.py")
 
     pycsw_settings = {
@@ -81,6 +82,7 @@ def build_pycsw_settings(app=None):
             "contact_role": "pointOfContact",
         },
         "repository": {
+            "database": db_connection,
             "mappings": mappings_path,
             "table": record_table,
         },
@@ -256,17 +258,23 @@ class CswEndpoint(View):
         try:
             if not self.application_records.get(app, None):
                 base = declarative_base(bind=server.repository.engine, mapper=Mapper)
-                self.application_records[app] = type('dataset', (base,),
-                                                     dict(__tablename__=record_table, __table_args__={'autoload': True, 'schema': None}, __mapper_args__={"primary_key": ["id"]}))
+                self.application_records[app] = type(
+                    'dataset',
+                    (base,),
+                    dict(
+                        __tablename__=record_table,
+                        __table_args__={'autoload': True, 'schema': None},
+                        __mapper_args__={"primary_key": ["id"]},
+                    ),
+                )
             server.repository.dataset = self.application_records[app]
         except BaseException:
             pass
 
-        server.request = "http://{}{}".format(get_current_site(request),
-                                              reverse("csw_endpoint"))
+        server.request = "{}{}".format(get_current_site(request), reverse("csw_endpoint"))
         server.requesttype = request.method
         server.kvp = self._normalize_params(request.GET)
-        response = server.dispatch()
+        response = server.dispatch()[1]
         return HttpResponse(response, content_type="application/xml")
 
     @method_decorator(csrf_exempt)
