@@ -24,7 +24,7 @@ Manage new or updating project dependencies with Poetry also, like so:
 This project uses environment variables (in a `.env` file) to define application settings.
 Required settings are as follows:
 
-    DATABASE_URL="postgis://USER:PASSWORD@HOST:PORT/DATABASE_NAME"
+    DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE_NAME"
     SECRET_KEY="ThisIsASecretKey"
 
 # Running
