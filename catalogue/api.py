@@ -235,7 +235,7 @@ class RecordSerializer(serializers.ModelSerializer):
             return None
 
     def get_url(self, obj):
-        return '{}{}'.format(settings.BASE_URL, '/catalogue/api/records/{0}.json'.format(obj.identifier))
+        return '{}{}'.format(settings.BASE_URL, '/catalogue/api/records/{}.json'.format(obj.identifier))
 
     def _update_styles(self, styles_data):
         # save the style to file system with specific file name
