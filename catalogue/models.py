@@ -16,7 +16,8 @@ slug_re = re.compile(r'^[a-z0-9_]+$')
 validate_slug = RegexValidator(
     slug_re,
     "Slug can only contain lowercase letters, numbers and underscores",
-    "invalid")
+    "invalid",
+)
 
 
 class PreviewTile(object):
@@ -71,8 +72,7 @@ class PycswConfig(models.Model):
     # domain_query_type
     # domain_counts
     # spatial_ranking
-    transactions = models.BooleanField(default=False,
-                                       help_text="Enable transactions")
+    transactions = models.BooleanField(default=False, help_text="Enable transactions")
     allowed_ips = models.CharField(
         max_length=255, blank=True, default="127.0.0.1",
         help_text="IP addresses that are allowed to make transaction requests"
@@ -119,8 +119,8 @@ class Collaborator(models.Model):
     name = models.CharField(max_length=255)
     position = models.CharField(max_length=255)
     email = models.EmailField()
-    organization = models.ForeignKey(Organization, on_delete=models.PROTECT,
-                                     related_name="collaborators")
+    organization = models.ForeignKey(
+        Organization, on_delete=models.PROTECT, related_name="collaborators")
     url = models.URLField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
     fax = models.CharField(max_length=50, blank=True)
@@ -128,7 +128,7 @@ class Collaborator(models.Model):
     contact_instructions = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
-        return "{}({})".format(self.name, self.organization.short_name)
+        return f"{self.name} ({self.organization.short_name})"
 
 
 class Tag(models.Model):
@@ -140,74 +140,85 @@ class Tag(models.Model):
 
 
 def legendFilePath(instance, filename):
-    return "catalogue/legends/{}{}".format(instance.identifier.replace(':',
-                                                                       '_').replace(" ", "_"), os.path.splitext(filename)[1])
+    id = instance.identifier.replace(':', '_').replace(" ", "_")
+    ext = os.path.splitext(filename)[1]
+    return f"catalogue/legends/{id}{ext}"
 
 
 def sourceLegendFilePath(instance, filename):
-    return "catalogue/legends/source/{}{}".format(instance.identifier.replace(
-        ':', '_').replace(" ", "_"), os.path.splitext(filename)[1])
+    id = instance.identifier.replace(':', '_').replace(" ", "_")
+    ext = os.path.splitext(filename)[1]
+    return f"catalogue/legends/source/{id}{ext}"
 
 
 class Record(models.Model):
-    identifier = models.CharField(
-        max_length=255, db_index=True, help_text="Maps to pycsw:Identifier")
-    title = models.CharField(max_length=255, null=True, blank=True,
-                             help_text='Maps to pycsw:Title')
+    identifier = models.CharField(max_length=255, db_index=True, help_text="Maps to pycsw:Identifier")
+    title = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text='Maps to pycsw:Title',
+    )
     typename = models.CharField(
-        max_length=100, default="", db_index=True, blank=True,
-        help_text="Maps to pycsw:Typename", editable=False
+        max_length=100,
+        default="",
+        db_index=True,
+        blank=True,
+        editable=False,
+        help_text="Maps to pycsw:Typename",
     )
     schema = models.CharField(
-        max_length=100, default="",
-        help_text="Maps to pycsw:Schema", db_index=True, blank=True, editable=False
-    )
-    insert_date = models.DateTimeField(
-        auto_now_add=True, help_text='Maps to pycsw:InsertDate')
-    xml = models.TextField(
-        default='',
+        max_length=100,
+        default="",
+        db_index=True,
+        blank=True,
         editable=False,
-        help_text=' Maps to pycsw:XML'
+        help_text="Maps to pycsw:Schema",
     )
+    insert_date = models.DateTimeField(auto_now_add=True, help_text='Maps to pycsw:InsertDate')
+    xml = models.TextField(default="", editable=False, help_text='Maps to pycsw:XML')
     any_text = models.TextField(help_text='Maps to pycsw:AnyText', null=True, blank=True)
-    modified = models.DateTimeField(
-        auto_now=True,
-        help_text='Maps to pycsw:Modified'
+    modified = models.DateTimeField(auto_now=True, help_text='Maps to pycsw:Modified')
+    bounding_box = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Maps to pycsw:BoundingBox. It's a WKT geometry",
     )
-    bounding_box = models.TextField(null=True, blank=True,
-                                    help_text='Maps to pycsw:BoundingBox.It\'s a WKT geometry')
-    abstract = models.TextField(blank=True, null=True,
-                                help_text='Maps to pycsw:Abstract')
-    keywords = models.CharField(max_length=255, blank=True, null=True,
-                                help_text='Maps to pycsw:Keywords')
+    abstract = models.TextField(blank=True, null=True, help_text='Maps to pycsw:Abstract')
+    keywords = models.CharField(max_length=255, blank=True, null=True, help_text='Maps to pycsw:Keywords')
     tags = models.ManyToManyField(Tag, blank=True)
-    publication_date = models.DateTimeField(
-        null=True, blank=True,
-        help_text='Maps to pycsw:PublicationDate'
+    publication_date = models.DateTimeField(null=True, blank=True, help_text='Maps to pycsw:PublicationDate')
+    service_type = models.CharField(
+        max_length=30,
+        null=True,
+        blank=True,
+        help_text='Maps to pycsw:ServiceType',
     )
-    service_type = models.CharField(max_length=30, null=True, blank=True,
-                                    help_text='Maps to pycsw:ServiceType')
     service_type_version = models.CharField(
-        max_length=30, null=True, blank=True, editable=False,
-        help_text='Maps to pycsw:ServiceTypeVersion'
+        max_length=30,
+        null=True,
+        blank=True,
+        editable=False,
+        help_text='Maps to pycsw:ServiceTypeVersion',
     )
-    links = models.TextField(null=True, blank=True, editable=False,
-                             help_text='Maps to pycsw:Links')
+    links = models.TextField(null=True, blank=True, editable=False, help_text='Maps to pycsw:Links')
     crs = models.CharField(max_length=255, null=True, blank=True, help_text='Maps to pycsw:CRS')
-    # Custom fields
     active = models.BooleanField(default=True, editable=False)
-
-    bbox_re = re.compile(
-        'POLYGON\s*\(\(([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\)\)')
     legend = models.FileField(
         upload_to=legendFilePath,
         null=True,
-        blank=True)
+        blank=True,
+    )
     source_legend = models.FileField(
         upload_to=sourceLegendFilePath,
         null=True,
         blank=True,
-        editable=False)
+        editable=False,
+    )
+
+    bbox_re = re.compile(
+        'POLYGON\s*\(\(([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\)\)'
+    )
 
     @property
     def bbox(self):

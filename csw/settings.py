@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.gis',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
@@ -128,11 +127,17 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'console'
         },
+        'null': {
+            'class': 'logging.NullHandler',
+        }
     },
     'loggers': {
-        '': {
+        'pycsw': {
+            'handlers': ['null'],
+        },
+        'django': {
             'handlers': ['console'],
-            'level': 'DEBUG' if DEBUG else 'INFO',
+            'level': 'INFO',
         },
     }
 }
