@@ -83,6 +83,7 @@ class StyleAdmin(admin.ModelAdmin):
 @admin.register(models.Record)
 class RecordAdmin(VersionAdmin):
     list_display = ("identifier", "service_type", "crs", "title", "active", "publication_date")
+    list_filter = ("active",)
     inlines = [StyleInline, ]
     readonly_fields = (
         'service_type',

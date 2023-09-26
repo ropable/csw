@@ -818,16 +818,6 @@ class StyleEventListener(object):
             # deleted style is the default style, reset the default style
             instance.record.set_default_style(instance.format)
 
-    @staticmethod
-    @receiver(post_delete, sender=Style)
-    def remove_style_file(sender, instance, **kwargs):
-        """ Deletes the style file from disk when the
-            object is deleted
-        """
-        if instance.content:
-            if os.path.isfile(instance.content.path):
-                os.remove(instance.content.path)
-
 
 class Application(models.Model):
     """
