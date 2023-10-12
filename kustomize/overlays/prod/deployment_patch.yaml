@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: csw-deployment
+  labels:
+    app: csw-prod
+spec:
+  selector:
+    matchLabels:
+      app: csw-prod
+  template:
+    metadata:
+      labels:
+        app: csw-prod
+    spec:
+      containers:
+      - name: csw
+        image: ghcr.io/dbca-wa/csw:1.3.8
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: csw-env-prod
+              key: DATABASE_URL
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: csw-env-prod
+              key: SECRET_KEY
+        - name: BASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: csw-env-prod
+              key: BASE_URL
+        - name: CORS_URL
+          valueFrom:
+            secretKeyRef:
+              name: csw-env-prod
+              key: CORS_URL
+        - name: AZURE_ACCOUNT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: csw-env-prod
+              key: AZURE_ACCOUNT_NAME
+        - name: AZURE_ACCOUNT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: csw-env-prod
+              key: AZURE_ACCOUNT_KEY
+        - name: AZURE_CONTAINER
+          valueFrom:
+            secretKeyRef:
+              name: csw-env-prod
+              key: AZURE_CONTAINER
