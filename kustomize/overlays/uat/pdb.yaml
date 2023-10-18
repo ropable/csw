@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: csw-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: csw-uat
+      variant: uat
