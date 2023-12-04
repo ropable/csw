@@ -15,8 +15,6 @@ spec:
     spec:
       containers:
       - name: csw
-        image: ghcr.io/dbca-wa/csw
-        imagePullPolicy: Always
         env:
         - name: DATABASE_URL
           valueFrom:
