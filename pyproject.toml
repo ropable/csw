@@ -18,7 +18,7 @@ django-reversion = "5.0.4"
 whitenoise = {version = "6.5.0", extras = ["brotli"]}
 lxml = "4.9.3"
 pycsw = "2.6.1"
-pyproj = "3.6.0"
+pyproj = "3.6.1"
 sqlalchemy = "1.4.49"
 djangorestframework = "3.14.0"
 django-filter = "23.2"
