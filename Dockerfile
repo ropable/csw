@@ -13,13 +13,13 @@ RUN apt-get update -y \
 # Install Python libs using Poetry.
 FROM builder_base_csw as python_libs_csw
 WORKDIR /app
-ARG POETRY_VERSION=1.6.1
+ARG POETRY_VERSION=1.7.1
 RUN pip install poetry=="${POETRY_VERSION}"
 COPY poetry.lock pyproject.toml ./
 RUN poetry config virtualenvs.create false \
   && poetry install --no-interaction --no-ansi --only main
 
-# Install a non-root user.
+# Set up a non-root user.
 ARG UID=10001
 ARG GID=10001
 RUN groupadd -g "${GID}" appuser \
