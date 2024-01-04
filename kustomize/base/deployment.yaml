@@ -10,6 +10,8 @@ spec:
     spec:
       containers:
       - name: csw
+        image: ghcr.io/dbca-wa/csw
+        imagePullPolicy: Always
         env:
         - name: ALLOWED_DOMAINS
           value: ".dbca.wa.gov.au"
@@ -51,5 +53,13 @@ spec:
           capabilities:
             drop:
               - ALL
-          readOnlyRootFilesystem: false
+          readOnlyRootFilesystem: true
+        volumeMounts:
+          - mountPath: /tmp
+            name: tmpfs-ram
+      volumes:
+        - name: tmpfs-ram
+          emptyDir:
+            medium: "Memory"
       restartPolicy: Always
+      terminationGracePeriodSeconds: 180
