@@ -5,5 +5,5 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: csw-prod
+    app: csw-deployment
     variant: prod
