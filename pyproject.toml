@@ -19,7 +19,7 @@ whitenoise = {version = "6.6.0", extras = ["brotli"]}
 lxml = "4.9.3"
 pycsw = "2.6.1"
 pyproj = "3.6.1"
-sqlalchemy = "1.4.49"
+sqlalchemy = "2.0.26"
 djangorestframework = "3.14.0"
 django-filter = "23.5"
 mixer = "7.2.2"
