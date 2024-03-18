@@ -2,11 +2,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: csw-deployment
+  labels:
+    app: csw-deployment
 spec:
   replicas: 2
   strategy:
     type: RollingUpdate
+  selector:
+    matchLabels:
+      app: csw-deployment
   template:
+    metadata:
+      labels:
+        app: csw-deployment
     spec:
       containers:
       - name: csw
