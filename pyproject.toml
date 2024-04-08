@@ -16,7 +16,7 @@ dj-database-url = "2.1.0"
 gunicorn = "21.2.0"
 django-reversion = "5.0.12"
 whitenoise = {version = "6.6.0", extras = ["brotli"]}
-lxml = "5.1.0"
+lxml = "5.2.1"
 pycsw = "2.6.1"
 pyproj = "3.6.1"
 sqlalchemy = "2.0.28"
