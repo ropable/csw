@@ -17,7 +17,7 @@ CSRF_COOKIE_SECURE = env('CSRF_COOKIE_SECURE', False)
 CSRF_COOKIE_HTTPONLY = env('CSRF_COOKIE_HTTPONLY', False)
 SESSION_COOKIE_SECURE = env('SESSION_COOKIE_SECURE', False)
 if not DEBUG:
-    ALLOWED_HOSTS = env('ALLOWED_DOMAINS', '').split(',')
+    ALLOWED_HOSTS = env('ALLOWED_HOSTS', 'localhost').split(',')
 else:
     ALLOWED_HOSTS = ['*']
 INTERNAL_IPS = ['127.0.0.1', '::1']
