@@ -2,16 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: csw-deployment
-  labels:
-    app: csw-prod
 spec:
-  selector:
-    matchLabels:
-      app: csw-prod
   template:
-    metadata:
-      labels:
-        app: csw-prod
     spec:
       containers:
       - name: csw

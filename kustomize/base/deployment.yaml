@@ -2,18 +2,25 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: csw-deployment
+  labels:
+    app: csw-deployment
 spec:
-  replicas: 2
   strategy:
     type: RollingUpdate
+  selector:
+    matchLabels:
+      app: csw-deployment
   template:
+    metadata:
+      labels:
+        app: csw-deployment
     spec:
       containers:
       - name: csw
         image: ghcr.io/dbca-wa/csw
         imagePullPolicy: Always
         env:
-        - name: ALLOWED_DOMAINS
+        - name: ALLOWED_HOSTS
           value: ".dbca.wa.gov.au"
         - name: CSRF_COOKIE_SECURE
           value: "True"
@@ -24,28 +31,40 @@ spec:
         resources:
           requests:
             memory: "128Mi"
-            cpu: "25m"
+            cpu: "10m"
           limits:
-            memory: "4096Mi"
+            memory: "2048Mi"
             cpu: "1000m"
+        startupProbe:
+          httpGet:
+            path: /livez
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 3
+          periodSeconds: 15
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
         livenessProbe:
           httpGet:
-            path: /liveness
+            path: /livez
             port: 8080
             scheme: HTTP
-          initialDelaySeconds: 3
-          periodSeconds: 3
+          initialDelaySeconds: 0
+          periodSeconds: 15
+          successThreshold: 1
           failureThreshold: 3
-          timeoutSeconds: 2
+          timeoutSeconds: 10
         readinessProbe:
           httpGet:
-            path: /readiness
+            path: /readyz
             port: 8080
             scheme: HTTP
-          initialDelaySeconds: 3
-          periodSeconds: 3
+          initialDelaySeconds: 0
+          periodSeconds: 15
+          successThreshold: 1
           failureThreshold: 3
-          timeoutSeconds: 2
+          timeoutSeconds: 10
         securityContext:
           runAsNonRoot: true
           privileged: false

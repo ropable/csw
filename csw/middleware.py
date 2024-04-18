@@ -1,4 +1,9 @@
+from django.db import connections
 from django.http import HttpResponse, HttpResponseServerError
+import logging
+
+
+LOGGER = logging.getLogger("django")
 
 
 class HealthCheckMiddleware(object):
@@ -8,9 +13,9 @@ class HealthCheckMiddleware(object):
 
     def __call__(self, request):
         if request.method == "GET":
-            if request.path == "/readiness":
+            if request.path == "/readyz":
                 return self.readiness(request)
-            elif request.path == "/liveness":
+            elif request.path == "/livez":
                 return self.liveness(request)
         return self.get_response(request)
 
@@ -25,14 +30,13 @@ class HealthCheckMiddleware(object):
         being present.
         """
         try:
-            from django.db import connections
-            for name in connections:
-                cursor = connections[name].cursor()
-                cursor.execute("SELECT 1;")
-                row = cursor.fetchone()
-                if row is None:
-                    return HttpResponseServerError("db: invalid response")
+            cursor = connections["default"].cursor()
+            cursor.execute("SELECT 1;")
+            row = cursor.fetchone()
+            if row is None:
+                return HttpResponseServerError("Database: invalid response")
         except Exception as e:
-            return HttpResponseServerError("db: cannot connect to database.")
+            LOGGER.exception(e)
+            return HttpResponseServerError("Database: unable to connect")
 
         return HttpResponse("OK")
