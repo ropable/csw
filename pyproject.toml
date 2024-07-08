@@ -16,7 +16,7 @@ dbca-utils = "2.0.2"
 dj-database-url = "2.1.0"
 gunicorn = "22.0.0"
 django-reversion = "5.0.12"
-whitenoise = {version = "6.6.0", extras = ["brotli"]}
+whitenoise = {version = "6.7.0", extras = ["brotli"]}
 lxml = "5.2.2"
 pycsw = "2.6.1"
 pyproj = "3.6.1"
