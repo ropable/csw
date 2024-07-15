@@ -27,7 +27,7 @@ mixer = "7.2.2"
 requests = "2.32.3"
 # Note that click is required, but isn't declared as a dependency by pycsw.
 click = "8.1.7"
-django-storages = {version = "1.14.3", extras = ["azure"]}
+django-storages = {version = "1.14.4", extras = ["azure"]}
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.26.0"
