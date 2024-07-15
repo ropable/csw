@@ -8,7 +8,7 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
-django = "3.2.25"
+django = "5.0.7"
 psycopg = {version = "3.2.1", extras = ["binary", "pool"]}
 django-extensions = "3.2.3"
 python-dotenv = "1.0.1"
