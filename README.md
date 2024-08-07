@@ -11,9 +11,13 @@ environment. With Poetry installed, change into the project directory and run:
 
     poetry install
 
-To run Python commands in the virtualenv, thereafter run them like so:
+Activate the Poetry-managed virtualenv like so:
 
-    poetry run python manage.py
+    poetry shell
+
+To run Python commands in the virtualenv, thereafter run them as normal:
+
+    python manage.py
 
 Manage new or updating project dependencies with Poetry also, like so:
 
@@ -31,11 +35,11 @@ Required settings are as follows:
 
 Use `runserver` to run a local copy of the application:
 
-    poetry run python manage.py runserver 0:8080
+    python manage.py runserver 0:8080
 
 Run console commands manually:
 
-    poetry run python manage.py shell_plus
+    python manage.py shell_plus
 
 # Media uploads
 

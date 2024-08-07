@@ -1,9 +1,11 @@
-from dbca_utils.utils import env
-import dj_database_url
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
+import dj_database_url
+from dbca_utils.utils import env
+
+# Project paths
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = str(Path(__file__).resolve().parents[1])
 PROJECT_DIR = str(Path(__file__).resolve().parents[0])
@@ -14,8 +16,11 @@ sys.path.insert(0, PROJECT_DIR)
 DEBUG = env('DEBUG', False)
 SECRET_KEY = env('SECRET_KEY', 'PlaceholderSecretKey')
 CSRF_COOKIE_SECURE = env('CSRF_COOKIE_SECURE', False)
-CSRF_COOKIE_HTTPONLY = env('CSRF_COOKIE_HTTPONLY', False)
+CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1').split(',')
 SESSION_COOKIE_SECURE = env('SESSION_COOKIE_SECURE', False)
+SECURE_SSL_REDIRECT = env('SECURE_SSL_REDIRECT', False)
+SECURE_REFERRER_POLICY = env('SECURE_REFERRER_POLICY', None)
+SECURE_HSTS_SECONDS = env('SECURE_HSTS_SECONDS', 0)
 if not DEBUG:
     ALLOWED_HOSTS = env('ALLOWED_HOSTS', 'localhost').split(',')
 else:
@@ -24,9 +29,6 @@ INTERNAL_IPS = ['127.0.0.1', '::1']
 ROOT_URLCONF = 'csw.urls'
 WSGI_APPLICATION = 'csw.wsgi.application'
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
-BASE_URL = env('BASE_URL', 'https://csw.dbca.wa.gov.au')
-BORG_URL = env('BORG_URL', 'https://borg.dbca.wa.gov.au')
-CORS_URL = env('CORS_URL', 'https://sss.dbca.wa.gov.au')
 
 # Assume Azure blob storage is used for media uploads, unless explicitly set as local storage.
 LOCAL_MEDIA_STORAGE = env('LOCAL_MEDIA_STORAGE', False)
@@ -39,6 +41,10 @@ else:
     AZURE_ACCOUNT_KEY = env('AZURE_ACCOUNT_KEY', 'key')
     AZURE_CONTAINER = env('AZURE_CONTAINER', 'container')
     AZURE_URL_EXPIRATION_SECS = env('AZURE_URL_EXPIRATION_SECS', 3600)  # Default one hour.
+
+BASE_URL = env('BASE_URL', 'https://csw.dbca.wa.gov.au')
+BORG_URL = env('BORG_URL', 'https://borg.dbca.wa.gov.au')
+CORS_URL = env('CORS_URL', 'https://sss.dbca.wa.gov.au')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -89,6 +95,9 @@ TEMPLATES = [
         },
     },
 ]
+
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
 
 
 # Database configuration
