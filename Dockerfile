@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Prepare the base environment.
-FROM python:3.10.13-slim AS builder_base_csw
+FROM python:3.11.9-slim AS builder_base_csw
 LABEL org.opencontainers.image.authors=asi@dbca.wa.gov.au
 LABEL org.opencontainers.image.source=https://github.com/dbca-wa/csw
 
@@ -27,7 +27,6 @@ RUN groupadd -g "${GID}" appuser \
 
 # Install the project.
 FROM python_libs_csw
-WORKDIR /app
 COPY catalogue ./catalogue
 COPY csw ./csw
 COPY gunicorn.py manage.py ./
