@@ -22,6 +22,8 @@ spec:
         env:
         - name: ALLOWED_HOSTS
           value: ".dbca.wa.gov.au"
+        - name: CSRF_TRUSTED_ORIGINS
+          value: "https://*.dbca.wa.gov.au"
         - name: CSRF_COOKIE_SECURE
           value: "True"
         - name: SESSION_COOKIE_SECURE
@@ -33,7 +35,7 @@ spec:
             memory: "100Mi"
             cpu: "5m"
           limits:
-            memory: "2048Mi"
+            memory: "2Gi"
             cpu: "1000m"
         startupProbe:
           httpGet:
