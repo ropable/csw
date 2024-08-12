@@ -18,7 +18,7 @@ gunicorn = "22.0.0"
 django-reversion = "5.0.12"
 dbca-utils = "2.0.2"
 whitenoise = {version = "6.7.0", extras = ["brotli"]}
-lxml = {version = "5.2.2", extras = ["html-clean"]}
+lxml = {version = "5.3.0", extras = ["html-clean"]}
 pycsw = "2.6.1"
 # Note that click is required, but isn't declared as a dependency by pycsw.
 click = "8.1.7"
