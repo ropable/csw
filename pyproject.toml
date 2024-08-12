@@ -14,7 +14,7 @@ psycopg = {version = "3.2.1", extras = ["binary", "pool"]}
 django-extensions = "3.2.3"
 python-dotenv = "1.0.1"
 dj-database-url = "2.2.0"
-gunicorn = "22.0.0"
+gunicorn = "23.0.0"
 django-reversion = "5.0.12"
 dbca-utils = "2.0.2"
 whitenoise = {version = "6.7.0", extras = ["brotli"]}
