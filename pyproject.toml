@@ -23,7 +23,7 @@ pycsw = "2.6.1"
 # Note that click is required, but isn't declared as a dependency by pycsw.
 click = "8.1.7"
 pyproj = "3.6.1"
-sqlalchemy = "2.0.32"
+sqlalchemy = "2.0.34"
 djangorestframework = "3.15.2"
 django-filter = "23.5"
 requests = "2.32.3"
