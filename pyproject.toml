@@ -31,7 +31,7 @@ django-storages = { version = "1.14.4", extras = ["azure"] }
 mixer = "7.2.2"
 
 [tool.poetry.group.dev.dependencies]
-ipython = "^8.27.0"
+ipython = "^8.28.0"
 ipdb = "^0.13.13"
 pre-commit = "^3.8.0"
 
