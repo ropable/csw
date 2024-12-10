@@ -6,40 +6,40 @@ spec:
   template:
     spec:
       containers:
-      - name: csw
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: csw-env-uat
-              key: DATABASE_URL
-        - name: SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: csw-env-uat
-              key: SECRET_KEY
-        - name: BASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: csw-env-uat
-              key: BASE_URL
-        - name: CORS_URL
-          valueFrom:
-            secretKeyRef:
-              name: csw-env-uat
-              key: CORS_URL
-        - name: AZURE_ACCOUNT_NAME
-          valueFrom:
-            secretKeyRef:
-              name: csw-env-uat
-              key: AZURE_ACCOUNT_NAME
-        - name: AZURE_ACCOUNT_KEY
-          valueFrom:
-            secretKeyRef:
-              name: csw-env-uat
-              key: AZURE_ACCOUNT_KEY
-        - name: AZURE_CONTAINER
-          valueFrom:
-            secretKeyRef:
-              name: csw-env-uat
-              key: AZURE_CONTAINER
+        - name: csw
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: csw-env-uat
+                  key: DATABASE_URL
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: csw-env-uat
+                  key: SECRET_KEY
+            - name: BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: csw-env-uat
+                  key: BASE_URL
+            - name: CORS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: csw-env-uat
+                  key: CORS_URL
+            - name: AZURE_ACCOUNT_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: csw-env-uat
+                  key: AZURE_ACCOUNT_NAME
+            - name: AZURE_ACCOUNT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: csw-env-uat
+                  key: AZURE_ACCOUNT_KEY
+            - name: AZURE_CONTAINER
+              valueFrom:
+                secretKeyRef:
+                  name: csw-env-uat
+                  key: AZURE_CONTAINER
