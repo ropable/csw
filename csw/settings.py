@@ -29,14 +29,27 @@ INTERNAL_IPS = ["127.0.0.1", "::1"]
 ROOT_URLCONF = "csw.urls"
 WSGI_APPLICATION = "csw.wsgi.application"
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        # Use whitenoise to add compression and caching support for static files.
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Assume Azure blob storage is used for media uploads, unless explicitly set as local storage.
 LOCAL_MEDIA_STORAGE = env("LOCAL_MEDIA_STORAGE", False)
 if LOCAL_MEDIA_STORAGE:
-    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+    # Ensure that the local media directory exists.
+    if not os.path.exists(MEDIA_ROOT):
+        os.makedirs(MEDIA_ROOT)
 else:
-    DEFAULT_FILE_STORAGE = "storages.backends.azure_storage.AzureStorage"
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.azure_storage.AzureStorage",
+    }
     AZURE_ACCOUNT_NAME = env("AZURE_ACCOUNT_NAME", "name")
     AZURE_ACCOUNT_KEY = env("AZURE_ACCOUNT_KEY", "key")
     AZURE_CONTAINER = env("AZURE_CONTAINER", "container")
@@ -117,7 +130,6 @@ LANGUAGE_CODE = "en-us"
 # Static files configuration
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATIC_URL = "/static/"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 WHITENOISE_ROOT = STATIC_ROOT
 
 # Media uploads
