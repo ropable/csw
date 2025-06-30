@@ -1,45 +1,39 @@
-[tool.poetry]
+[project]
 name = "csw"
-version = "1.3.13"
+version = "1.3.14"
 description = "Catalogue service for spatial records over HTTP in the Department of Biodiversity, Conservation and Attractions."
-authors = ["ASU <asu@dbca.wa.gov.au>"]
+authors = [{ name = "Ashley Felton", email = "ashley.felton@dbca.wa.gov.au" }]
 license = "Apache-2.0"
-package-mode = false
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  # NOTE: pycsw is limited to <= Python 3.11.*
+  "django==4.2.17",
+  "psycopg[binary,pool]==3.2.9",
+  "django-extensions==3.2.3",
+  "python-dotenv==1.0.1",
+  "dj-database-url==2.2.0",
+  "gunicorn==23.0.0",
+  "django-reversion==5.1.0",
+  "dbca-utils==2.0.2",
+  "whitenoise[brotli]==6.7.0",
+  "lxml[html-clean]==5.3.0",
+  "pycsw==2.6.2",
+  "pyproj==3.7.0",
+  "sqlalchemy==2.0.36",
+  "djangorestframework==3.15.2",
+  "django-filter==24.3",
+  "requests==2.32.3",
+  "django-storages[azure]==1.14.4",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-# NOTE: pycsw is limited to <= Python 3.11.*
-django = "4.2.17"
-psycopg = {version = "3.2.9", extras = ["binary", "pool"]}
-django-extensions = "3.2.3"
-python-dotenv = "1.0.1"
-dj-database-url = "2.2.0"
-gunicorn = "23.0.0"
-django-reversion = "5.1.0"
-dbca-utils = "2.0.2"
-whitenoise = { version = "6.7.0", extras = ["brotli"] }
-lxml = { version = "5.3.0", extras = ["html-clean"] }
-pycsw = "2.6.1"
-# NOTE: click is required, but isn't declared as a dependency by pycsw.
-click = "8.1.7"
-pyproj = "3.7.0"
-sqlalchemy = "2.0.36"
-djangorestframework = "3.15.2"
-django-filter = "24.3"
-requests = "2.32.3"
-django-storages = { version = "1.14.4", extras = ["azure"] }
-mixer = "7.2.2"
-pre-commit = "^4.0.1"
-ipython = "^8.30.0"
+[dependency-groups]
+dev = ["ipython>=8.31.0", "ipdb>=0.13.13", "mixer>=7.2.2", "pre-commit>=4.0.1"]
 
-[tool.poetry.group.dev.dependencies]
-ipython = "^8.28.0"
-ipdb = "^0.13.13"
-pre-commit = "^4.0.0"
 
 # Reference: https://docs.astral.sh/ruff/configuration/
 [tool.ruff]
-line-length = 120
+line-length = 140
 
 [tool.ruff.lint]
 ignore = [
@@ -50,7 +44,3 @@ ignore = [
 # Reference: https://www.djlint.com/docs/configuration/
 [tool.djlint]
 profile = "django"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"

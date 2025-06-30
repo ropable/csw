@@ -1,16 +1,16 @@
 from django import forms
-from django.utils.safestring import mark_safe
 from django.contrib.admin.widgets import AdminFileWidget
+from django.utils.safestring import mark_safe
 
-from catalogue.models import Record, Style, Application
+from catalogue.models import Application, Record, Style
 
 
 class StyleFileWidget(AdminFileWidget):
-    template_name = 'catalogue/widgets/style_file_input.html'
+    template_name = "catalogue/widgets/style_file_input.html"
 
     def get_context(self, name, value, attrs):
         context = super(AdminFileWidget, self).get_context(name, value, attrs)
-        context['widget']['readonly'] = getattr(self, "readonly") if hasattr(self, "readonly") else False
+        context["widget"]["readonly"] = getattr(self, "readonly") if hasattr(self, "readonly") else False
         return context
 
 
@@ -19,16 +19,22 @@ class Select(forms.Select):
         super(Select, self).__init__(attrs)
 
     def render(self, name, value, attrs=None, renderer=None):
-        if self.attrs.get('readonly', False):
+        if self.attrs.get("readonly", False):
             self.attrs["disabled"] = True
-            del self.attrs['readonly']
-            return mark_safe('\n'.join(["<input type='hidden' name='{}' value='{}'>".format(
-                name, value or ''), super(Select, self).render(name, value, attrs, renderer)]))
+            del self.attrs["readonly"]
+            return mark_safe(
+                "\n".join(
+                    [
+                        "<input type='hidden' name='{}' value='{}'>".format(name, value or ""),
+                        super(Select, self).render(name, value, attrs, renderer),
+                    ]
+                )
+            )
         else:
-            if 'readonly' in self.attrs:
-                del self.attrs['readonly']
-            if 'disabled' in self.attrs:
-                del self.attrs['disabled']
+            if "readonly" in self.attrs:
+                del self.attrs["readonly"]
+            if "disabled" in self.attrs:
+                del self.attrs["disabled"]
             return super(Select, self).render(name, value, attrs, renderer)
 
 
@@ -39,15 +45,13 @@ class RecordForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(RecordForm, self).__init__(*args, **kwargs)
-        self.fields['identifier'].widget.attrs['readonly'] = True
-        self.fields['legend'].widget.is_required = False
+        self.fields["identifier"].widget.attrs["readonly"] = True
+        self.fields["legend"].widget.is_required = False
 
     class Meta:
         model = Record
         fields = ("identifier", "title", "abstract", "keywords", "legend", "any_text", "tags")
-        widgets = {
-            'keywords': forms.TextInput(attrs={"style": "width:70%"})
-        }
+        widgets = {"keywords": forms.TextInput(attrs={"style": "width:70%"})}
 
 
 class StyleForm(forms.ModelForm):
@@ -57,25 +61,21 @@ class StyleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(StyleForm, self).__init__(*args, **kwargs)
-        if 'instance' in kwargs and kwargs['instance'] and kwargs['instance'].pk:
-            self.fields['name'].widget.attrs['readonly'] = True
-            if kwargs['instance'].name == Style.BUILTIN:
-                self.fields['content'].widget.readonly = True
+        if "instance" in kwargs and kwargs["instance"] and kwargs["instance"].pk:
+            self.fields["name"].widget.attrs["readonly"] = True
+            if kwargs["instance"].name == Style.BUILTIN:
+                self.fields["content"].widget.readonly = True
             else:
-                self.fields['content'].widget.readonly = False
-            self.fields['content'].widget.is_required = True
-            self.fields['record'].widget = self.fields['record'].widget.widget
-            self.fields['record'].widget.attrs['readonly'] = True
-            self.fields['format'].widget.attrs['readonly'] = True
+                self.fields["content"].widget.readonly = False
+            self.fields["content"].widget.is_required = True
+            self.fields["record"].widget = self.fields["record"].widget.widget
+            self.fields["record"].widget.attrs["readonly"] = True
+            self.fields["format"].widget.attrs["readonly"] = True
 
     class Meta:
         model = Style
         fields = ("name", "record", "format", "content", "default")
-        widgets = {
-            'record': Select(),
-            'format': Select(),
-            'content': StyleFileWidget()
-        }
+        widgets = {"record": Select(), "format": Select(), "content": StyleFileWidget()}
 
 
 class ApplicationForm(forms.ModelForm):
@@ -85,8 +85,8 @@ class ApplicationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(ApplicationForm, self).__init__(*args, **kwargs)
-        if 'instance' in kwargs and kwargs['instance'] and kwargs['instance'].pk:
-            self.fields['name'].widget.attrs['readonly'] = True
+        if "instance" in kwargs and kwargs["instance"] and kwargs["instance"].pk:
+            self.fields["name"].widget.attrs["readonly"] = True
 
     class Meta:
         model = Application

@@ -5,23 +5,22 @@ Biodiversity, Conservation and Attractions.
 
 ## Installation
 
-The recommended way to set up this project for development is using
-[Poetry](https://python-poetry.org/docs/) to install and manage a virtual Python
-environment. With Poetry installed, change into the project directory and run:
+Dependencies for this project are managed using [uv](https://docs.astral.sh/uv/).
+With uv installed, change into the project directory and run:
 
-    poetry install
+    uv sync
 
-Activate the Poetry-managed virtualenv like so:
+Activate the virtualenv like so:
 
-    poetry shell
+    source .venv/bin/activate
 
-To run Python commands in the virtualenv, thereafter run them as normal:
+To run Python commands in the activated virtualenv, thereafter run them like so:
 
     python manage.py
 
-Manage new or updating project dependencies with Poetry also, like so:
+Manage new or updated project dependencies with uv also, like so:
 
-    poetry add newpackage==1.0
+    uv add newpackage==1.0
 
 ## Environment variables
 
