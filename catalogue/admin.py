@@ -1,15 +1,15 @@
-from django.contrib import admin
-from django.contrib import messages
-from django.utils.safestring import mark_safe
-from django.conf import settings
-from django.template import Context, Template
-import requests
-from reversion.admin import VersionAdmin
 import sys
 import traceback
 
+import requests
+from django.conf import settings
+from django.contrib import admin, messages
+from django.template import Context, Template
+from django.utils.safestring import mark_safe
+from reversion.admin import VersionAdmin
+
 from catalogue import models
-from catalogue.forms import RecordForm, StyleForm, ApplicationForm
+from catalogue.forms import ApplicationForm, RecordForm, StyleForm
 
 
 class CollaboratorInline(admin.StackedInline):
@@ -24,9 +24,9 @@ class StyleInline(admin.StackedInline):
     template = "catalogue/style/edit_inline/stacked.html"
 
 
-#@admin.register(models.Style)
+# @admin.register(models.Style)
 class StyleAdmin(admin.ModelAdmin):
-    list_display = ('name', 'record', 'format', 'default')
+    list_display = ("name", "record", "format", "default")
     form = StyleForm
 
     def has_delete_permission(self, request, obj=None):
@@ -43,7 +43,7 @@ class StyleAdmin(admin.ModelAdmin):
             return super(StyleAdmin, self).has_delete_permission(request, obj)
 
     def custom_delete_selected(self, request, queryset):
-        if request.POST.get('post') != 'yes':
+        if request.POST.get("post") != "yes":
             # the confirm page, or user not confirmed
             return self.default_delete_action[0](self, request, queryset)
 
@@ -55,28 +55,27 @@ class StyleAdmin(admin.ModelAdmin):
                 style.delete()
             except BaseException:
                 error = sys.exc_info()
-                failed_objects.append(
-                    (style.identifier,
-                     traceback.format_exception_only(
-                         error[0],
-                         error[1])))
+                failed_objects.append((style.identifier, traceback.format_exception_only(error[0], error[1])))
                 # remove failed, continue to process the next publish
                 continue
 
         if failed_objects:
-            messages.warning(request, mark_safe("Some selected styles are deleted failed:<ul>{0}</ul>".format(
-                "".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects]))))
+            messages.warning(
+                request,
+                mark_safe(
+                    "Some selected styles are deleted failed:<ul>{0}</ul>".format(
+                        "".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects])
+                    )
+                ),
+            )
         else:
             messages.success(request, "All selected styles are deleted successfully")
 
     def get_actions(self, request):
         actions = super(StyleAdmin, self).get_actions(request)
-        self.default_delete_action = actions['delete_selected']
-        del actions['delete_selected']
-        actions['delete_selected'] = (
-            StyleAdmin.custom_delete_selected,
-            self.default_delete_action[1],
-            self.default_delete_action[2])
+        self.default_delete_action = actions["delete_selected"]
+        del actions["delete_selected"]
+        actions["delete_selected"] = (StyleAdmin.custom_delete_selected, self.default_delete_action[1], self.default_delete_action[2])
         return actions
 
 
@@ -84,19 +83,22 @@ class StyleAdmin(admin.ModelAdmin):
 class RecordAdmin(VersionAdmin):
     list_display = ("identifier", "service_type", "crs", "title", "active", "publication_date")
     list_filter = ("active",)
-    inlines = [StyleInline, ]
+    inlines = [
+        StyleInline,
+    ]
     readonly_fields = (
-        'service_type',
-        'service_type_version',
-        'crs',
-        '_bounding_box',
-        'source_legend',
-        '_ows_resources',
-        'active',
-        'publication_date',
-        'modified',
-        'insert_date')
-    search_fields = ["identifier", 'service_type']
+        "service_type",
+        "service_type_version",
+        "crs",
+        "_bounding_box",
+        "source_legend",
+        "_ows_resources",
+        "active",
+        "publication_date",
+        "modified",
+        "insert_date",
+    )
+    search_fields = ["identifier", "service_type"]
     form = RecordForm
     filter_horizontal = ["tags"]
     html = """<table>
@@ -117,6 +119,7 @@ class RecordAdmin(VersionAdmin):
 
     def _publish_required(self, instance):
         return instance.modified > instance.publication_date if instance.modified and instance.publication_date else False
+
     _publish_required.short_description = "Publish Required"
     _publish_required.boolean = True
 
@@ -157,8 +160,7 @@ class RecordAdmin(VersionAdmin):
         ows_resources = instance.ows_resource
         if ows_resources:
             for resource in ows_resources:
-                resource["tileSize"] = "{}x{}".format(
-                    resource["width"], resource["height"]) if "width" in resource else ""
+                resource["tileSize"] = "{}x{}".format(resource["width"], resource["height"]) if "width" in resource else ""
             context = Context({"resources": ows_resources})
             resources = Template(self.ows_resources_template).render(context)
 
@@ -209,18 +211,25 @@ class RecordAdmin(VersionAdmin):
                         continue
                     failed_objects.append((layer, status["message"]))
                 if failed_objects:
-                    messages.warning(request, mark_safe("Some selected records are published failed:<ul>{0}</ul>".format(
-                        "".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects]))))
+                    messages.warning(
+                        request,
+                        mark_safe(
+                            "Some selected records are published failed:<ul>{0}</ul>".format(
+                                "".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects])
+                            )
+                        ),
+                    )
                 else:
                     messages.success(request, "All selected records are published successfully")
 
         except Exception as e:
             traceback.print_exc()
             messages.warning(request, str(e))
+
     publish.short_description = "Publish"
 
     def custom_delete_selected(self, request, queryset):
-        if request.POST.get('post') != 'yes':
+        if request.POST.get("post") != "yes":
             # the confirm page, or user not confirmed
             return self.default_delete_action[0](self, request, queryset)
 
@@ -232,17 +241,19 @@ class RecordAdmin(VersionAdmin):
                 record.delete()
             except BaseException:
                 error = sys.exc_info()
-                failed_objects.append(
-                    (record.identifier,
-                     traceback.format_exception_only(
-                         error[0],
-                         error[1])))
+                failed_objects.append((record.identifier, traceback.format_exception_only(error[0], error[1])))
                 # remove failed, continue to process the next publish
                 continue
 
         if failed_objects:
-            messages.warning(request, mark_safe("Some selected records are deleted failed:<ul>{0}</ul>".format(
-                "".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects]))))
+            messages.warning(
+                request,
+                mark_safe(
+                    "Some selected records are deleted failed:<ul>{0}</ul>".format(
+                        "".join(["<li>{0} : {1}</li>".format(o[0], o[1]) for o in failed_objects])
+                    )
+                ),
+            )
         else:
             messages.success(request, "All selected records are deleted successfully")
 
@@ -250,25 +261,28 @@ class RecordAdmin(VersionAdmin):
 
     def get_actions(self, request):
         actions = super(RecordAdmin, self).get_actions(request)
-        self.default_delete_action = actions['delete_selected']
-        del actions['delete_selected']
-        actions['delete_selected'] = (
-            RecordAdmin.custom_delete_selected,
-            self.default_delete_action[1],
-            self.default_delete_action[2])
+        self.default_delete_action = actions["delete_selected"]
+        del actions["delete_selected"]
+        actions["delete_selected"] = (RecordAdmin.custom_delete_selected, self.default_delete_action[1], self.default_delete_action[2])
         return actions
 
 
-#@admin.register(models.Organization)
+# @admin.register(models.Organization)
 class OrganizationAdmin(admin.ModelAdmin):
     list_display = ("name", "_address", "url")
-    inlines = [CollaboratorInline, ]
+    inlines = [
+        CollaboratorInline,
+    ]
     actions = None
 
     def _address(self, instance):
-
-        return "{0}, {1} {2} {3}, {4} ".format(instance.address or "", instance.city or "",
-                                               instance.state_or_province or "", instance.postal_code or "", instance.country or "")
+        return "{0}, {1} {2} {3}, {4} ".format(
+            instance.address or "",
+            instance.city or "",
+            instance.state_or_province or "",
+            instance.postal_code or "",
+            instance.country or "",
+        )
 
     _address.short_description = "address"
 
@@ -279,7 +293,7 @@ class OrganizationAdmin(admin.ModelAdmin):
         return False
 
 
-#@admin.register(models.PycswConfig)
+# @admin.register(models.PycswConfig)
 class PycswConfigAdmin(admin.ModelAdmin):
     list_display = ("title", "language", "point_of_contact", "inspire_enabled", "transactions")
     actions = None
@@ -294,7 +308,7 @@ class PycswConfigAdmin(admin.ModelAdmin):
 @admin.register(models.Application)
 class ApplicationAdmin(VersionAdmin):
     list_display = ("name", "description", "last_modify_time", "create_time")
-    readonly_fields = ('last_modify_time', 'create_time')
+    readonly_fields = ("last_modify_time", "create_time")
     form = ApplicationForm
     search_fields = ["name"]
     filter_horizontal = ["records"]

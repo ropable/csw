@@ -1,18 +1,17 @@
+import json
 import math
 import os
 import re
-import json
-import pyproj
 
-from django.db import models
-from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_save, post_delete
+import pyproj
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from django.db import models
+from django.db.models.signals import post_delete, post_save, pre_save
+from django.dispatch import receiver
 
-
-slug_re = re.compile(r'^[a-z0-9_]+$')
+slug_re = re.compile(r"^[a-z0-9_]+$")
 validate_slug = RegexValidator(
     slug_re,
     "Slug can only contain lowercase letters, numbers and underscores",
@@ -28,9 +27,9 @@ class PreviewTile(object):
         zoom_level = 1
         while zoom_level <= max_zoom:
             if (
-                (bbox[0] - tile_bbox[0] < (tile_bbox[2] - tile_bbox[0]) / 2 and bbox[2] - tile_bbox[0] >= (tile_bbox[2] - tile_bbox[0]) / 2) or
-                (bbox[1] - tile_bbox[1] < (tile_bbox[3] - tile_bbox[1]) /
-                 2 and bbox[3] - tile_bbox[1] >= (tile_bbox[3] - tile_bbox[1]) / 2)
+                bbox[0] - tile_bbox[0] < (tile_bbox[2] - tile_bbox[0]) / 2 and bbox[2] - tile_bbox[0] >= (tile_bbox[2] - tile_bbox[0]) / 2
+            ) or (
+                bbox[1] - tile_bbox[1] < (tile_bbox[3] - tile_bbox[1]) / 2 and bbox[3] - tile_bbox[1] >= (tile_bbox[3] - tile_bbox[1]) / 2
             ):
                 break
             if bbox[0] - tile_bbox[0] < (tile_bbox[2] - tile_bbox[0]) / 2:
@@ -56,8 +55,7 @@ class PreviewTile(object):
     def EPSG_3857(bbox):
         # compute the tile which can cover the whole bbox
         # gridset bound [-20, 037, 508.34, -20, 037, 508.34, 20, 037, 508.34, 20, 037, 508.34]
-        return PreviewTile._preview_tile(
-            [-20037508.34, -20037508.34, 20037508.34, 20037508.34], 14, bbox)
+        return PreviewTile._preview_tile([-20037508.34, -20037508.34, 20037508.34, 20037508.34], 14, bbox)
 
 
 class PycswConfig(models.Model):
@@ -74,8 +72,7 @@ class PycswConfig(models.Model):
     # spatial_ranking
     transactions = models.BooleanField(default=False, help_text="Enable transactions")
     allowed_ips = models.CharField(
-        max_length=255, blank=True, default="127.0.0.1",
-        help_text="IP addresses that are allowed to make transaction requests"
+        max_length=255, blank=True, default="127.0.0.1", help_text="IP addresses that are allowed to make transaction requests"
     )
     harvest_page_size = models.IntegerField(default=10)
     title = models.CharField(max_length=50)
@@ -119,8 +116,7 @@ class Collaborator(models.Model):
     name = models.CharField(max_length=255)
     position = models.CharField(max_length=255)
     email = models.EmailField()
-    organization = models.ForeignKey(
-        Organization, on_delete=models.PROTECT, related_name="collaborators")
+    organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="collaborators")
     url = models.URLField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
     fax = models.CharField(max_length=50, blank=True)
@@ -140,13 +136,13 @@ class Tag(models.Model):
 
 
 def legendFilePath(instance, filename):
-    id = instance.identifier.replace(':', '_').replace(" ", "_")
+    id = instance.identifier.replace(":", "_").replace(" ", "_")
     ext = os.path.splitext(filename)[1]
     return f"catalogue/legends/{id}{ext}"
 
 
 def sourceLegendFilePath(instance, filename):
-    id = instance.identifier.replace(':', '_').replace(" ", "_")
+    id = instance.identifier.replace(":", "_").replace(" ", "_")
     ext = os.path.splitext(filename)[1]
     return f"catalogue/legends/source/{id}{ext}"
 
@@ -157,7 +153,7 @@ class Record(models.Model):
         max_length=255,
         null=True,
         blank=True,
-        help_text='Maps to pycsw:Title',
+        help_text="Maps to pycsw:Title",
     )
     typename = models.CharField(
         max_length=100,
@@ -175,34 +171,34 @@ class Record(models.Model):
         editable=False,
         help_text="Maps to pycsw:Schema",
     )
-    insert_date = models.DateTimeField(auto_now_add=True, help_text='Maps to pycsw:InsertDate')
-    xml = models.TextField(default="", editable=False, help_text='Maps to pycsw:XML')
-    any_text = models.TextField(help_text='Maps to pycsw:AnyText', null=True, blank=True)
-    modified = models.DateTimeField(auto_now=True, help_text='Maps to pycsw:Modified')
+    insert_date = models.DateTimeField(auto_now_add=True, help_text="Maps to pycsw:InsertDate")
+    xml = models.TextField(default="", editable=False, help_text="Maps to pycsw:XML")
+    any_text = models.TextField(help_text="Maps to pycsw:AnyText", null=True, blank=True)
+    modified = models.DateTimeField(auto_now=True, help_text="Maps to pycsw:Modified")
     bounding_box = models.TextField(
         null=True,
         blank=True,
         help_text="Maps to pycsw:BoundingBox. It's a WKT geometry",
     )
-    abstract = models.TextField(blank=True, null=True, help_text='Maps to pycsw:Abstract')
-    keywords = models.CharField(max_length=255, blank=True, null=True, help_text='Maps to pycsw:Keywords')
+    abstract = models.TextField(blank=True, null=True, help_text="Maps to pycsw:Abstract")
+    keywords = models.CharField(max_length=255, blank=True, null=True, help_text="Maps to pycsw:Keywords")
     tags = models.ManyToManyField(Tag, blank=True)
-    publication_date = models.DateTimeField(null=True, blank=True, help_text='Maps to pycsw:PublicationDate')
+    publication_date = models.DateTimeField(null=True, blank=True, help_text="Maps to pycsw:PublicationDate")
     service_type = models.CharField(
         max_length=30,
         null=True,
         blank=True,
-        help_text='Maps to pycsw:ServiceType',
+        help_text="Maps to pycsw:ServiceType",
     )
     service_type_version = models.CharField(
         max_length=30,
         null=True,
         blank=True,
         editable=False,
-        help_text='Maps to pycsw:ServiceTypeVersion',
+        help_text="Maps to pycsw:ServiceTypeVersion",
     )
-    links = models.TextField(null=True, blank=True, editable=False, help_text='Maps to pycsw:Links')
-    crs = models.CharField(max_length=255, null=True, blank=True, help_text='Maps to pycsw:CRS')
+    links = models.TextField(null=True, blank=True, editable=False, help_text="Maps to pycsw:Links")
+    crs = models.CharField(max_length=255, null=True, blank=True, help_text="Maps to pycsw:CRS")
     active = models.BooleanField(default=True, editable=False)
     legend = models.FileField(
         upload_to=legendFilePath,
@@ -217,7 +213,7 @@ class Record(models.Model):
     )
 
     bbox_re = re.compile(
-        'POLYGON\s*\(\(([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\)\)'
+        "POLYGON\s*\(\(([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*([\+\-0-9\.]+)\s+([\+\-0-9\.]+)\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\, \s*[\+\-0-9\.]+\s+[\+\-0-9\.]+\s*\)\)"
     )
 
     @property
@@ -243,17 +239,21 @@ class Record(models.Model):
     def metadata_link(self, request):
         if request:
             return {
-                'endpoint': '{}/catalogue/'.format(settings.BASE_URL),
-                'version': '2.0.2',
-                'type': 'CSW',
-                'link': '{}/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={}'.format(settings.BASE_URL, self.identifier),
+                "endpoint": "{}/catalogue/".format(settings.BASE_URL),
+                "version": "2.0.2",
+                "type": "CSW",
+                "link": "{}/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={}".format(
+                    settings.BASE_URL, self.identifier
+                ),
             }
         else:
             return {
-                'endpoint': '{0}/catalogue/'.format(settings.BASE_URL),
-                'version': '2.0.2',
-                'type': 'CSW',
-                'link': '{0}/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={1}'.format(settings.BASE_URL, self.identifier)
+                "endpoint": "{0}/catalogue/".format(settings.BASE_URL),
+                "version": "2.0.2",
+                "type": "CSW",
+                "link": "{0}/catalogue/?version=2.0.2&service=CSW&request=GetRecordById&elementSetName=full&typenames=csw:Record&resultType=results&id={1}".format(
+                    settings.BASE_URL, self.identifier
+                ),
             }
 
     @property
@@ -267,16 +267,11 @@ class Record(models.Model):
             r = re.split("\t", link)
             sample_link = r[3]
             r = json.loads(r[2])
-            if 'WMS' in r['protocol']:
-                _type = 'WMS'
-            elif 'WFS' in r['protocol']:
-                _type = 'WFS'
-            resource = {
-                'type': _type,
-                'version': r['version'],
-                'endpoint': r['linkage'],
-                'link': sample_link
-            }
+            if "WMS" in r["protocol"]:
+                _type = "WMS"
+            elif "WFS" in r["protocol"]:
+                _type = "WFS"
+            resource = {"type": _type, "version": r["version"], "endpoint": r["linkage"], "link": sample_link}
             resource.update(r)
             resources.append(resource)
         return resources
@@ -286,23 +281,23 @@ class Record(models.Model):
         Get array of links with specific type from links column
         """
         if self.links:
-            links = self.links.split('^')
+            links = self.links.split("^")
         else:
             links = []
-        if _type == 'style':
+        if _type == "style":
             style_links = []
             for link in links:
                 r = re.split("\t", link)
                 r_json = json.loads(r[2])
-                if 'application' in r_json['protocol']:
+                if "application" in r_json["protocol"]:
                     style_links.append(link)
             links = style_links
-        elif _type == 'ows':
+        elif _type == "ows":
             ows_links = []
             for link in links:
                 r = re.split("\t", link)
                 r_json = json.loads(r[2])
-                if 'OGC' in r_json['protocol']:
+                if "OGC" in r_json["protocol"]:
                     ows_links.append(link)
             links = ows_links
         return links
@@ -312,14 +307,14 @@ class Record(models.Model):
         """
         Get array of style links from links column
         """
-        return self.get_resource_links('style')
+        return self.get_resource_links("style")
 
     @property
     def ows_links(self):
         """
         Get array of ows links from links column
         """
-        return self.get_resource_links('ows')
+        return self.get_resource_links("ows")
 
     def generate_ows_link(self, endpoint, service_type, service_version):
         """
@@ -336,22 +331,18 @@ class Record(models.Model):
         original_endpoint = endpoint
         # parse endpoint's parameters
         endpoint = endpoint.split("?", 1)
-        endpoint, endpoint_parameters = (
-            endpoint[0], endpoint[1]) if len(endpoint) == 2 else (
-            endpoint[0], None)
+        endpoint, endpoint_parameters = (endpoint[0], endpoint[1]) if len(endpoint) == 2 else (endpoint[0], None)
         endpoint_parameters = endpoint_parameters.split("&") if endpoint_parameters else None
-        endpoint_parameters = dict([(p.split("=", 1)[0].upper(), p.split("=", 1))
-                                    for p in endpoint_parameters] if endpoint_parameters else [])
+        endpoint_parameters = dict(
+            [(p.split("=", 1)[0].upper(), p.split("=", 1)) for p in endpoint_parameters] if endpoint_parameters else []
+        )
 
         # get target_crs
         target_crs = None
         if service_type == "WFS":
-            target_crs = [endpoint_parameters.get(k)[1]
-                          for k in ["SRSNAME"] if k in endpoint_parameters]
+            target_crs = [endpoint_parameters.get(k)[1] for k in ["SRSNAME"] if k in endpoint_parameters]
         elif service_type in ["WMS", "GWC"]:
-            target_crs = [
-                endpoint_parameters.get(k)[1] for k in [
-                    "SRS", "CRS"] if k in endpoint_parameters]
+            target_crs = [endpoint_parameters.get(k)[1] for k in ["SRS", "CRS"] if k in endpoint_parameters]
 
         if target_crs:
             target_crs = target_crs[0].upper()
@@ -370,7 +361,9 @@ class Record(models.Model):
                 except Exception as e:
                     raise ValidationError(
                         "Transform the bbox of layer({0}) from crs({1}) to crs({2}) failed.{3}".format(
-                            self.identifier, self.crs, target_crs, str(e)))
+                            self.identifier, self.crs, target_crs, str(e)
+                        )
+                    )
 
             if service_type == "WFS":
                 # to limit the returned features, shrink the original bbox to 10 percent
@@ -383,17 +376,17 @@ class Record(models.Model):
                     return (max - min) / 2 + (max - min) * percent / 2
 
                 shrinked_bbox = [
-                    shrinked_min(
-                        bbox[0], bbox[2]), shrinked_min(
-                        bbox[1], bbox[3]), shrinked_max(
-                        bbox[0], bbox[2]), shrinked_max(
-                        bbox[1], bbox[3])]
+                    shrinked_min(bbox[0], bbox[2]),
+                    shrinked_min(bbox[1], bbox[3]),
+                    shrinked_max(bbox[0], bbox[2]),
+                    shrinked_max(bbox[1], bbox[3]),
+                ]
         else:
             shrinked_bbox = None
 
         def bbox2str(bbox, service, version):
             if service != "WFS" or version == "1.0.0":
-                return ', '.join(str(c) for c in bbox)
+                return ", ".join(str(c) for c in bbox)
             else:
                 return ", ".join([str(c) for c in [bbox[1], bbox[0], bbox[3], bbox[2]]])
 
@@ -438,7 +431,7 @@ class Record(models.Model):
                 ("SRS", "CRS"): self.crs.upper(),
                 "WIDTH": size[0],
                 "HEIGHT": size[1],
-                "FORMAT": "image/png"
+                "FORMAT": "image/png",
             }
 
             parameters = {
@@ -457,7 +450,7 @@ class Record(models.Model):
                 ("SRS", "CRS"): self.crs.upper(),
                 "WIDTH": 1024,
                 "HEIGHT": 1024,
-                "FORMAT": "image/png"
+                "FORMAT": "image/png",
             }
             parameters = {
                 "crs": target_crs,
@@ -483,16 +476,15 @@ class Record(models.Model):
             raise Exception("Unknown service type({})".format(service_type))
 
         def is_exist(k):
-            return any([n.upper() in endpoint_parameters for n in (
-                k if isinstance(k, tuple) or isinstance(k, list) else [k])]
-            )
+            return any([n.upper() in endpoint_parameters for n in (k if isinstance(k, tuple) or isinstance(k, list) else [k])])
 
-        querystring = "&".join(["{}={}".format(k[0] if isinstance(k, tuple) or isinstance(
-            k, list) else k, v) for k, v in kvp.items() if not is_exist(k)])
+        querystring = "&".join(
+            ["{}={}".format(k[0] if isinstance(k, tuple) or isinstance(k, list) else k, v) for k, v in kvp.items() if not is_exist(k)]
+        )
         if querystring:
             if original_endpoint[-1] in ("?", "&"):
                 link = "{}{}".format(original_endpoint, querystring)
-            elif '?' in original_endpoint:
+            elif "?" in original_endpoint:
                 link = "{}&{}".format(original_endpoint, querystring)
             else:
                 link = "{}?{}".format(original_endpoint, querystring)
@@ -501,11 +493,18 @@ class Record(models.Model):
 
         # get the endpoint after removing ows related parameters
         if endpoint_parameters:
+
             def is_exist(k):
-                return any([any([k == key.upper() for key in item_key]) if isinstance(
-                    item_key, tuple) or isinstance(item_key, list) else k == item_key.upper() for item_key in kvp])
-            endpoint_querystring = "&".join(["{}={}".format(*v)
-                                             for k, v in endpoint_parameters.items() if not is_exist(k)])
+                return any(
+                    [
+                        any([k == key.upper() for key in item_key])
+                        if isinstance(item_key, tuple) or isinstance(item_key, list)
+                        else k == item_key.upper()
+                        for item_key in kvp
+                    ]
+                )
+
+            endpoint_querystring = "&".join(["{}={}".format(*v) for k, v in endpoint_parameters.items() if not is_exist(k)])
             if endpoint_querystring:
                 endpoint = "{}?{}".format(endpoint, endpoint_querystring)
 
@@ -516,7 +515,7 @@ class Record(models.Model):
         }
         schema.update(parameters)
 
-        return 'None\tNone\t{0}\t{1}'.format(json.dumps(schema), link)
+        return "None\tNone\t{0}\t{1}".format(json.dumps(schema), link)
 
     def refresh_style_links(self):
         """
@@ -540,10 +539,9 @@ class Record(models.Model):
             "protocol": "application/{}".format(style.format.lower()),
             "name": style.name,
             "default": style.default,
-            "linkage": "{}/media/".format(settings.BASE_URL)
+            "linkage": "{}/media/".format(settings.BASE_URL),
         }
-        return 'None\tNone\t{0}\t{1}/media/{2}'.format(json.dumps(
-            schema, sort_keys=True), settings.BASE_URL, style.content)
+        return "None\tNone\t{0}\t{1}/media/{2}".format(json.dumps(schema, sort_keys=True), settings.BASE_URL, style.content)
 
     @staticmethod
     def format_links(resources):
@@ -551,12 +549,12 @@ class Record(models.Model):
         format resources as link string
         """
         pos = 1
-        links = ''
+        links = ""
         for r in resources:
             if pos == 1:
                 links += r
             else:
-                links += '^{0}'.format(r)
+                links += "^{0}".format(r)
             pos += 1
         return links
 
@@ -639,13 +637,10 @@ class Record(models.Model):
         """
         default_size = (600, 600)
         if self.bbox:
-            if (default_size[0] / default_size[1]) > math.fabs((self.bbox[2] -
-                                                                self.bbox[0]) / (self.bbox[3] - self.bbox[1])):
-                return (int(default_size[1] * math.fabs((self.bbox[2] -
-                                                         self.bbox[0]) / (self.bbox[3] - self.bbox[1]))), default_size[1])
+            if (default_size[0] / default_size[1]) > math.fabs((self.bbox[2] - self.bbox[0]) / (self.bbox[3] - self.bbox[1])):
+                return (int(default_size[1] * math.fabs((self.bbox[2] - self.bbox[0]) / (self.bbox[3] - self.bbox[1]))), default_size[1])
             else:
-                return (default_size[0], int(
-                    default_size[0] * math.fabs((self.bbox[3] - self.bbox[1]) / (self.bbox[2] - self.bbox[0]))))
+                return (default_size[0], int(default_size[0] * math.fabs((self.bbox[3] - self.bbox[1]) / (self.bbox[2] - self.bbox[0]))))
         else:
             return default_size
 
@@ -656,7 +651,7 @@ class Record(models.Model):
             super(Record, self).delete(using)
 
     class Meta:
-        ordering = ['identifier']
+        ordering = ["identifier"]
 
 
 class RecordEventListener(object):
@@ -681,18 +676,13 @@ class RecordEventListener(object):
 
 
 def styleFilePath(instance, filename):
-    return "catalogue/styles/{}_{}.{}".format(instance.record.identifier.replace(
-        ':', '_'), instance.name, instance.format.lower())
+    return "catalogue/styles/{}_{}.{}".format(instance.record.identifier.replace(":", "_"), instance.name, instance.format.lower())
 
 
 class Style(models.Model):
     BUILTIN = "builtin"
-    FORMAT_CHOICES = (
-        ('SLD', 'SLD'),
-        ('QML', 'QML'),
-        ('LYR', 'LAYER')
-    )
-    record = models.ForeignKey(Record, on_delete=models.PROTECT, related_name='styles')
+    FORMAT_CHOICES = (("SLD", "SLD"), ("QML", "QML"), ("LYR", "LAYER"))
+    record = models.ForeignKey(Record, on_delete=models.PROTECT, related_name="styles")
     name = models.CharField(max_length=255)
     format = models.CharField(max_length=3, choices=FORMAT_CHOICES)
     default = models.BooleanField(default=False)
@@ -704,6 +694,7 @@ class Style(models.Model):
 
     def clean(self):
         from django.core.exceptions import ValidationError
+
         if not self.pk and self.name == Style.BUILTIN:
             raise ValidationError("Can't add a builtin style.")
 
@@ -745,12 +736,12 @@ class StyleEventListener(object):
         style_links = instance.record.style_links
         ows_links = instance.record.ows_links
         if not instance.record.links:
-            instance.record.links = ''
+            instance.record.links = ""
         index = 0
         for style_link in style_links:
             parts = re.split("\t", style_link)
             r = json.loads(parts[2])
-            if r['name'] == json_link['name'] and r['protocol'] == json_link['protocol']:
+            if r["name"] == json_link["name"] and r["protocol"] == json_link["protocol"]:
                 if r["default"] != json_link["default"]:
                     style_links[index] = link
                     style_index = index
@@ -775,7 +766,7 @@ class StyleEventListener(object):
         for link in style_links:
             parts = re.split("\t", link)
             r = json.loads(parts[2])
-            if r['name'] == instance.name and instance.format.lower() in r['protocol']:
+            if r["name"] == instance.name and instance.format.lower() in r["protocol"]:
                 style_links.remove(link)
 
         links = ows_links + style_links
@@ -823,6 +814,7 @@ class Application(models.Model):
     """
     Represent a application which can access wms, wfs, wcs service from geoserver
     """
+
     name = models.CharField(max_length=255, validators=[validate_slug], unique=True, blank=False)
     description = models.TextField(blank=True)
     last_modify_time = models.DateTimeField(auto_now=True, null=False)
@@ -838,7 +830,7 @@ class Application(models.Model):
         return Application.get_view_name(self.name)
 
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -848,19 +840,14 @@ class ApplicationLayer(models.Model):
     """
     The relationship between application and layer
     """
+
     application = models.ForeignKey(Application, on_delete=models.PROTECT, blank=False, null=False)
-    layer = models.ForeignKey(
-        Record,
-        on_delete=models.PROTECT,
-        null=False,
-        blank=False,
-        limit_choices_to={
-            "active": True})
+    layer = models.ForeignKey(Record, on_delete=models.PROTECT, null=False, blank=False, limit_choices_to={"active": True})
     order = models.PositiveIntegerField(blank=False, null=False)
 
     def __str__(self):
         return "{}:{}".format(self.application.name, self.layer.identifier)
 
     class Meta:
-        unique_together = (('application', 'layer'))
-        ordering = ['application', 'order', 'layer']
+        unique_together = ("application", "layer")
+        ordering = ["application", "order", "layer"]
