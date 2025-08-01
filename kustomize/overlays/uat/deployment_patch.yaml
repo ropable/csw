@@ -43,3 +43,8 @@ spec:
                 secretKeyRef:
                   name: csw-env-uat
                   key: AZURE_CONTAINER
+      tolerations:
+        - effect: NoSchedule
+          key: kubernetes.azure.com/scalesetpriority
+          operator: Equal
+          value: spot
