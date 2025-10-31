@@ -15,7 +15,7 @@ dependencies = [
   "dj-database-url==3.0.0",
   "gunicorn==23.0.0",
   "django-reversion==6.0.0",
-  "dbca-utils==2.1.4",
+  "dbca-utils==2.1.5",
   "whitenoise[brotli]==6.11.0",
   "lxml[html-clean]==6.0.2",
   "pycsw==2.6.2",
