@@ -9,7 +9,7 @@ requires-python = ">=3.11,<3.12"
 dependencies = [
   # NOTE: pycsw is limited to <= Python 3.11.*
   "django==5.2.7",
-  "psycopg[binary,pool]==3.2.11",
+  "psycopg[binary,pool]==3.2.12",
   "django-extensions==4.1",
   "python-dotenv==1.1.0",
   "dj-database-url==3.0.0",
@@ -19,11 +19,11 @@ dependencies = [
   "whitenoise[brotli]==6.11.0",
   "lxml[html-clean]==6.0.2",
   "pycsw==2.6.2",
-  "pyproj==3.7.0",
+  "pyproj==3.7.2",
   "sqlalchemy==2.0.41",
   "djangorestframework==3.15.2",
   "django-filter==24.3",
-  "requests==2.32.3",
+  "requests==2.32.5",
   "django-storages[azure]==1.14.4",
 ]
 
