@@ -52,9 +52,12 @@ jobs:
           enable-cache: true
       #----------------------------------------------
       # Install project dependencies
+      # NOTE: this action requires the venv --seed step due to usage of Python 3.11
       #----------------------------------------------
       - name: Install dependencies
-        run: uv sync
+        run: |
+          uv venv --seed
+          uv sync
       #----------------------------------------------
       # Run unit tests
       #----------------------------------------------
