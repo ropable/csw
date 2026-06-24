@@ -17,7 +17,7 @@ dependencies = [
   "django-reversion==6.3.0",
   "dbca-utils==2.1.5",
   "whitenoise[brotli]==6.12.0",
-  "lxml[html-clean]==6.0.2",
+  "lxml[html-clean]==6.1.1",
   "pycsw==2.6.2",
   "pyproj==3.7.2",
   "sqlalchemy==2.0.49",
