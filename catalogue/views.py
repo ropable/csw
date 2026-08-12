@@ -2,6 +2,7 @@ import logging
 import os.path
 from itertools import chain
 
+from defusedxml.lxml import fromstring as safe_fromstring
 from django.apps import apps
 from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
@@ -10,7 +11,7 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
-from lxml import etree
+from lxml.etree import Element, SubElement
 from pycsw.core import util
 from pycsw.ogc.csw.csw3 import write_boundingbox
 from pycsw.server import Csw as PyCsw
@@ -100,7 +101,7 @@ def build_pycsw_settings(app=None):
         inspire["conformity_service"] = (config.conformity_service,)
         inspire["contact_name"] = (poc.name,)
         inspire["contact_email"] = (poc.email,)
-        inspire["temp_extent"] = ("{}/{}".format(config.temporal_extent_start.isoformat(), config.temporal_extent_end.isoformat()),)
+        inspire["temp_extent"] = (f"{config.temporal_extent_start.isoformat()}/{config.temporal_extent_end.isoformat()}",)
     return pycsw_settings
 
 
@@ -116,7 +117,7 @@ class Csw(PyCsw):
         else:
             elname = "Record"
 
-        record = etree.Element(util.nspath_eval("csw:%s" % elname, self.context.namespaces))
+        record = Element(util.nspath_eval("csw:%s" % elname, self.context.namespaces))
 
         if "elementname" in self.kvp and len(self.kvp["elementname"]) > 0:
             for elemname in self.kvp["elementname"]:
@@ -129,7 +130,7 @@ class Csw(PyCsw):
                 else:
                     value = util.getqattr(recobj, queryables[elemname]["dbcol"])
                     if value:
-                        etree.SubElement(record, util.nspath_eval(elemname, self.context.namespaces)).text = value
+                        SubElement(record, util.nspath_eval(elemname, self.context.namespaces)).text = value
         elif "elementsetname" in self.kvp:
             if (
                 self.kvp["elementsetname"] == "full"
@@ -138,9 +139,9 @@ class Csw(PyCsw):
                 and util.getqattr(recobj, self.context.md_core_model["mappings"]["pycsw:Type"]) != "service"
             ):
                 # dump record as is and exit
-                return etree.fromstring(util.getqattr(recobj, self.context.md_core_model["mappings"]["pycsw:XML"]), self.context.parser)
+                return safe_fromstring(util.getqattr(recobj, self.context.md_core_model["mappings"]["pycsw:XML"]), self.context.parser)
 
-            etree.SubElement(record, util.nspath_eval("dc:identifier", self.context.namespaces)).text = util.getqattr(
+            SubElement(record, util.nspath_eval("dc:identifier", self.context.namespaces)).text = util.getqattr(
                 recobj, self.context.md_core_model["mappings"]["pycsw:Identifier"]
             )
 
@@ -148,18 +149,18 @@ class Csw(PyCsw):
                 val = util.getqattr(recobj, queryables[i]["dbcol"])
                 if not val:
                     val = ""
-                etree.SubElement(record, util.nspath_eval(i, self.context.namespaces)).text = val
+                SubElement(record, util.nspath_eval(i, self.context.namespaces)).text = val
 
             if self.kvp["elementsetname"] in ["summary", "full"]:
                 # add summary elements
                 keywords = util.getqattr(recobj, queryables["dc:subject"]["dbcol"])
                 if keywords is not None:
                     for keyword in keywords.split(","):
-                        etree.SubElement(record, util.nspath_eval("dc:subject", self.context.namespaces)).text = keyword
+                        SubElement(record, util.nspath_eval("dc:subject", self.context.namespaces)).text = keyword
 
                 val = util.getqattr(recobj, queryables["dc:format"]["dbcol"])
                 if val:
-                    etree.SubElement(record, util.nspath_eval("dc:format", self.context.namespaces)).text = val
+                    SubElement(record, util.nspath_eval("dc:format", self.context.namespaces)).text = val
 
                 # links
                 rlinks = util.getqattr(recobj, self.context.md_core_model["mappings"]["pycsw:Links"])
@@ -168,20 +169,20 @@ class Csw(PyCsw):
                     links = rlinks.split("^")
                     for link in links:
                         linkset = link.split("\t")
-                        etree.SubElement(
+                        SubElement(
                             record, util.nspath_eval("dct:references", self.context.namespaces), scheme=linkset[2].replace('"', "&quot;")
                         ).text = linkset[-1]
 
                 for i in ["dc:relation", "dct:modified", "dct:abstract"]:
                     val = util.getqattr(recobj, queryables[i]["dbcol"])
                     if val is not None:
-                        etree.SubElement(record, util.nspath_eval(i, self.context.namespaces)).text = val
+                        SubElement(record, util.nspath_eval(i, self.context.namespaces)).text = val
 
             if self.kvp["elementsetname"] == "full":  # add full elements
                 for i in ["dc:date", "dc:creator", "dc:publisher", "dc:contributor", "dc:source", "dc:language", "dc:rights"]:
                     val = util.getqattr(recobj, queryables[i]["dbcol"])
                     if val:
-                        etree.SubElement(record, util.nspath_eval(i, self.context.namespaces)).text = val
+                        SubElement(record, util.nspath_eval(i, self.context.namespaces)).text = val
 
             # always write out ows:BoundingBox
             bboxel = write_boundingbox(
@@ -257,7 +258,7 @@ class CswEndpoint(View):
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
-        return super(CswEndpoint, self).dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, app=None):
         pycsw_settings = build_pycsw_settings()
@@ -284,5 +285,5 @@ class CswEndpoint(View):
         return kvp
 
     def _get_post_version(self, raw_request):
-        exml = etree.fromstring(raw_request)
+        exml = safe_fromstring(raw_request)
         return exml.get("version")
