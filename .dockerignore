@@ -1,10 +1,9 @@
 .dockerignore
-.env
-.flake8
 .git*
-.s2i
-.travis.yml
+.env
+.venv
 Dockerfile
+__pycache__
 LICENSE
 logs
 media
