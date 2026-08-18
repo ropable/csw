@@ -48,3 +48,4 @@ RUN python manage.py collectstatic --noinput
 USER app
 EXPOSE 8080
 CMD ["gunicorn", "csw.wsgi", "--config", "gunicorn.py"]
+
