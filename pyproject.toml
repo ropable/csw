@@ -20,7 +20,7 @@ dependencies = [
   "lxml[html-clean]==6.1.1",
   "pycsw==2.6.2",
   "pyproj==3.7.2",
-  "sqlalchemy==2.0.51",
+  "sqlalchemy==2.0.52",
   "djangorestframework==3.18.0",
   "django-filter==26.1",
   "requests==2.34.2",
