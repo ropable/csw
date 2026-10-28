@@ -1,51 +1,56 @@
 # syntax=docker/dockerfile:1
-# Prepare the base environment.
-FROM python:3.11-slim-bookworm AS builder_base
+# Args to centralise versions.
+ARG PYTHON_VERSION=3.11-slim-bookworm
 
-ENV UV_LINK_MODE=copy \
-  UV_COMPILE_BYTECODE=1 \
-  UV_PYTHON_DOWNLOADS=never \
-  UV_PROJECT_ENVIRONMENT=/app/.venv
+# ---- Builder stage ----
+FROM python:${PYTHON_VERSION} AS builder
 
+RUN <<EOF
+apt-get update
+apt-get install -y --no-install-recommends \
+  gcc \
+  g++
+EOF
+
+WORKDIR /app
 COPY --from=ghcr.io/astral-sh/uv:0.13 /uv /bin/
-COPY pyproject.toml uv.lock /_lock/
+COPY pyproject.toml uv.lock ./
+RUN uv sync --no-group dev --link-mode=copy --compile-bytecode --no-python-downloads --frozen
 
-# Synchronize dependencies.
-# This layer is cached until uv.lock or pyproject.toml change.
-RUN --mount=type=cache,target=/root/.cache \
-  cd /_lock && \
-  uv venv --seed && \
-  uv sync --frozen --no-group dev
+# ---- Runtime stage ----
+FROM python:${PYTHON_VERSION} AS runtime
+LABEL org.opencontainers.image.title="ibms" \
+  org.opencontainers.image.description="Catalogue Service Web" \
+  org.opencontainers.image.source="https://github.com/dbca-wa/csw" \
+  org.opencontainers.image.vendor="DBCA" \
+  org.opencontainers.image.authors="asi@dbca.wa.gov.au"
 
-##################################################################################
-
-# Prepare the base environment.
-FROM python:3.11.11-slim
-LABEL org.opencontainers.image.authors=asi@dbca.wa.gov.au
-LABEL org.opencontainers.image.source=https://github.com/dbca-wa/csw
-
-RUN apt-get update -y \
-  && apt-get upgrade -y \
-  && apt-get install -y libmagic-dev gcc binutils gdal-bin proj-bin python3-dev libpq-dev gzip curl \
-  && rm -rf /var/lib/apt/lists/*
+# Environment variables
+ENV PYTHONUNBUFFERED=1 \
+  PYTHONDONTWRITEBYTECODE=1 \
+  PATH="/app/.venv/bin:$PATH"
 
 # Create a non-root user.
 RUN groupadd -r -g 10001 app \
   && useradd -r -u 10001 -d /app -g app -N app
 
-COPY --from=builder_base --chown=app:app /app /app
-# Make sure we use the virtualenv by default.
-# Run Python unbuffered.
-ENV PATH=/app/.venv/bin:$PATH \
-  PYTHONUNBUFFERED=1
-
-# Install the project.
 WORKDIR /app
-COPY catalogue ./catalogue
-COPY csw ./csw
-COPY gunicorn.py manage.py ./
-RUN python manage.py collectstatic --noinput
+
+# Copy installed virtualenv from builder
+COPY --from=builder --chown=app:app /app /app
+
+# Copy the remaining project files to finish building the project
+COPY --chown=app:app gunicorn.py manage.py pyproject.toml ./
+COPY --chown=app:app catalogue ./catalogue
+COPY --chown=app:app csw ./csw
+
+# Compile scripts and collect static files
+RUN <<EOF
+python -m compileall manage.py catalogue csw
+python manage.py collectstatic --noinput
+EOF
+
+# Run project as the non-root user
 USER app
 EXPOSE 8080
 CMD ["gunicorn", "csw.wsgi", "--config", "gunicorn.py"]
-
