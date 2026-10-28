@@ -6,6 +6,10 @@ updates:
       interval: 'weekly'
     commit-message:
       prefix: '[python] '
+    ignore:
+      - dependency-name: 'setuptools:*'
+        # Ignore newer versions of setuptools (limited to Python 3.11 due to pycsw)
+        versions: ['>80.10.2']
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
